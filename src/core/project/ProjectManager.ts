@@ -11,7 +11,7 @@ import { IAudioEngine } from '../audio-engine/IAudioEngine';
 export class ProjectManager {
   private currentProject: Project | null = null;
   private audioEngine: IAudioEngine;
-  private autoSaveInterval: NodeJS.Timeout | null = null;
+  private autoSaveInterval: number | null = null;
 
   constructor(audioEngine: IAudioEngine) {
     this.audioEngine = audioEngine;
@@ -174,7 +174,7 @@ export class ProjectManager {
   enableAutoSave(intervalMs: number = 60000): void {
     this.disableAutoSave();
 
-    this.autoSaveInterval = setInterval(() => {
+    this.autoSaveInterval = window.setInterval(() => {
       if (this.currentProject) {
         this.saveProject();
         console.log('[ProjectManager] Auto-saved project');
@@ -189,7 +189,7 @@ export class ProjectManager {
    */
   disableAutoSave(): void {
     if (this.autoSaveInterval) {
-      clearInterval(this.autoSaveInterval);
+      window.clearInterval(this.autoSaveInterval);
       this.autoSaveInterval = null;
       console.log('[ProjectManager] Auto-save disabled');
     }

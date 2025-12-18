@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { Track, User } from '../../types/social.types';
+import { Track } from '../../types/social.types';
 
 export interface TrackCardProps {
   track: Track;

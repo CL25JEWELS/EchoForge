@@ -4,7 +4,7 @@
  * Individual pad button for triggering sounds
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { PadConfig, NoteState } from '../../types/audio.types';
 
 export interface PadProps {
@@ -12,7 +12,6 @@ export interface PadProps {
   state: NoteState;
   onTrigger: () => void;
   onStop: () => void;
-  onConfigChange: (config: Partial<PadConfig>) => void;
   className?: string;
 }
 
@@ -21,7 +20,6 @@ export const Pad: React.FC<PadProps> = ({
   state,
   onTrigger,
   onStop,
-  onConfigChange,
   className = ''
 }) => {
   const [isPressed, setIsPressed] = useState(false);

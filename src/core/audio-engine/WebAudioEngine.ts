@@ -33,7 +33,6 @@ interface ActiveVoice {
 export class WebAudioEngine implements IAudioEngine {
   private audioContext: AudioContext | null = null;
   private masterGainNode: GainNode | null = null;
-  private config: AudioEngineConfig | null = null;
   private sounds: Map<string, LoadedSound> = new Map();
   private pads: Map<string, PadConfig> = new Map();
   private activeVoices: Map<string, ActiveVoice[]> = new Map();
@@ -51,14 +50,12 @@ export class WebAudioEngine implements IAudioEngine {
     dropouts: 0
   };
 
-  async initialize(config: AudioEngineConfig): Promise<void> {
-    this.config = config;
-
+  async initialize(engineConfig: AudioEngineConfig): Promise<void> {
     // Create audio context
     this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
-      sampleRate: config.sampleRate,
-      latencyHint: config.latencyMode === 'low' ? 'interactive' : 
-                   config.latencyMode === 'high-quality' ? 'playback' : 'balanced'
+      sampleRate: engineConfig.sampleRate,
+      latencyHint: engineConfig.latencyMode === 'low' ? 'interactive' : 
+                   engineConfig.latencyMode === 'high-quality' ? 'playback' : 'balanced'
     });
 
     // Create master gain node
@@ -267,8 +264,8 @@ export class WebAudioEngine implements IAudioEngine {
   }
 
   setPadEnabled(padId: string, enabled: boolean): void {
-    const pad = this.pads.get(padId);
-    if (pad) {
+    const _pad = this.pads.get(padId);
+    if (_pad) {
       // Could add an 'enabled' flag to PadConfig if needed
       if (!enabled) {
         this.stopPad(padId);
@@ -282,7 +279,7 @@ export class WebAudioEngine implements IAudioEngine {
 
   reset(): void {
     // Stop all active voices
-    this.activeVoices.forEach((voices, padId) => {
+    this.activeVoices.forEach((_voices, padId) => {
       this.stopPad(padId);
     });
     this.activeVoices.clear();

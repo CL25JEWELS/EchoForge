@@ -13,7 +13,7 @@ export interface PadGridProps {
   padStates: Map<string, NoteState>;
   onPadTrigger: (padId: string) => void;
   onPadStop: (padId: string) => void;
-  onPadConfigChange: (padId: string, config: Partial<PadConfig>) => void;
+  onPadConfigChange?: (padId: string, config: Partial<PadConfig>) => void;
   columns?: number;
   className?: string;
 }
@@ -23,7 +23,6 @@ export const PadGrid: React.FC<PadGridProps> = ({
   padStates,
   onPadTrigger,
   onPadStop,
-  onPadConfigChange,
   columns = 4,
   className = ''
 }) => {
@@ -44,7 +43,6 @@ export const PadGrid: React.FC<PadGridProps> = ({
           state={padStates.get(pad.id) || NoteState.IDLE}
           onTrigger={() => onPadTrigger(pad.id)}
           onStop={() => onPadStop(pad.id)}
-          onConfigChange={config => onPadConfigChange(pad.id, config)}
         />
       ))}
     </div>

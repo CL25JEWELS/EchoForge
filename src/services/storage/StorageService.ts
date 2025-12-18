@@ -14,11 +14,10 @@ export interface StorageConfig {
 }
 
 export class StorageService {
-  private config: StorageConfig;
   private storageKey = 'looper-app';
 
-  constructor(config: StorageConfig) {
-    this.config = config;
+  constructor(_config: StorageConfig) {
+    // Store config for future cloud integration
   }
 
   // ===== Project Storage =====
@@ -93,7 +92,7 @@ export class StorageService {
   /**
    * Save project to cloud storage
    */
-  async saveProjectCloud(projectId: string, projectFile: ProjectFile): Promise<string> {
+  async saveProjectCloud(projectId: string, _projectFile: ProjectFile): Promise<string> {
     // This would integrate with Firebase, Supabase, or AWS
     console.log(`[StorageService] Saving project to cloud: ${projectId}`);
     
@@ -167,7 +166,7 @@ export class StorageService {
   /**
    * Upload audio file to cloud storage
    */
-  async uploadAudioFile(file: Blob, filename: string): Promise<string> {
+  async uploadAudioFile(_file: Blob, filename: string): Promise<string> {
     console.log(`[StorageService] Uploading audio file: ${filename}`);
     
     // Placeholder - would use cloud storage SDK
@@ -188,7 +187,7 @@ export class StorageService {
   /**
    * Upload image file to cloud storage
    */
-  async uploadImageFile(file: Blob, filename: string): Promise<string> {
+  async uploadImageFile(_file: Blob, filename: string): Promise<string> {
     console.log(`[StorageService] Uploading image file: ${filename}`);
     
     // Placeholder - would use cloud storage SDK

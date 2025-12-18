@@ -30,7 +30,6 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({
   });
   const [masterVolume, setMasterVolume] = useState(0.8);
   const [showSoundBrowser, setShowSoundBrowser] = useState(false);
-  const [selectedPadId, setSelectedPadId] = useState<string | null>(null);
 
   const audioEngine = app.getAudioEngine();
   const projectManager = app.getProjectManager();
@@ -97,15 +96,9 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({
     audioEngine.setMasterVolume(volume);
   };
 
-  const handlePadClick = (padId: string) => {
-    setSelectedPadId(padId);
-    setShowSoundBrowser(true);
-  };
-
   const handleSoundSelect = (sound: any) => {
-    if (selectedPadId) {
-      handlePadConfigChange(selectedPadId, { soundId: sound.id });
-    }
+    // In a real app, would assign sound to selected pad
+    console.log('Selected sound:', sound);
     setShowSoundBrowser(false);
   };
 

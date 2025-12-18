@@ -59,7 +59,7 @@ export class LooperApp {
       await this.audioEngine.initialize(this.config.audio);
 
       // Load default sound pack
-      const defaultPack = this.soundPackManager.createDefaultPack();
+      this.soundPackManager.createDefaultPack();
       
       // Mark as initialized
       this.initialized = true;
@@ -152,8 +152,8 @@ export const defaultConfig: LooperAppConfig = {
     maxPolyphony: 32
   },
   api: {
-    baseUrl: process.env.API_BASE_URL || 'https://api.looperapp.com',
-    apiKey: process.env.API_KEY
+    baseUrl: typeof process !== 'undefined' && process.env?.API_BASE_URL || 'https://api.looperapp.com',
+    apiKey: typeof process !== 'undefined' ? process.env?.API_KEY : undefined
   },
   storage: {
     storageType: 'local'
