@@ -92,22 +92,18 @@ export class StorageService {
   /**
    * Save project to cloud storage
    */
-  async saveProjectCloud(projectId: string, _projectFile: ProjectFile): Promise<string> {
+  async saveProjectCloud(_projectId: string, _projectFile: ProjectFile): Promise<string> {
     // This would integrate with Firebase, Supabase, or AWS
-    console.log(`[StorageService] Saving project to cloud: ${projectId}`);
-    
-    // Placeholder implementation
-    return `cloud://${projectId}`;
+    // TODO: Implement cloud storage integration
+    throw new Error('Cloud storage not implemented. Please configure a cloud storage provider.');
   }
 
   /**
    * Load project from cloud storage
    */
-  async loadProjectCloud(projectId: string): Promise<ProjectFile | null> {
-    console.log(`[StorageService] Loading project from cloud: ${projectId}`);
-    
-    // Placeholder implementation
-    return null;
+  async loadProjectCloud(_projectId: string): Promise<ProjectFile | null> {
+    // TODO: Implement cloud storage integration
+    throw new Error('Cloud storage not implemented. Please configure a cloud storage provider.');
   }
 
   // ===== User Data Storage =====

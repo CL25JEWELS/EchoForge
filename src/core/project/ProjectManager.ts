@@ -5,7 +5,7 @@
  */
 
 import { Project, ProjectFile, ExportOptions } from '../../types/project.types';
-import { PadConfig, TempoConfig } from '../../types/audio.types';
+import { PadConfig, TempoConfig, PlaybackMode } from '../../types/audio.types';
 import { IAudioEngine } from '../audio-engine/IAudioEngine';
 
 export class ProjectManager {
@@ -208,7 +208,7 @@ export class ProjectManager {
         soundId: null,
         volume: 0.8,
         pitch: 0,
-        playbackMode: 'one_shot' as any,
+        playbackMode: PlaybackMode.ONE_SHOT,
         pan: 0,
         effects: []
       });

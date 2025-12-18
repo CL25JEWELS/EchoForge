@@ -88,9 +88,32 @@ export const SocialScreen: React.FC<SocialScreenProps> = ({
     }
   };
 
-  const handleLoadMore = () => {
-    // Load more tracks
-    console.log('Loading more...');
+  const handleLoadMore = async () => {
+    if (!feed?.pagination?.hasMore) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const nextPage = (feed.pagination.page || 1) + 1;
+      const moreTracks = await apiService.getFeed(selectedFeedType, {
+        page: nextPage,
+        pageSize: 20
+      });
+      
+      // Append new tracks to existing feed
+      if (feed && moreTracks) {
+        setFeed({
+          ...feed,
+          tracks: [...feed.tracks, ...moreTracks.tracks],
+          pagination: moreTracks.pagination
+        });
+      }
+    } catch (error) {
+      console.error('Failed to load more tracks:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

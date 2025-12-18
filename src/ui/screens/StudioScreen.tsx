@@ -9,7 +9,7 @@ import { PadGrid } from '../components/PadGrid';
 import { PlaybackControls } from '../components/PlaybackControls';
 import { SoundBrowser } from '../components/SoundBrowser';
 import { LooperApp } from '../../core/LooperApp';
-import { NoteState, PadConfig, TempoConfig } from '../../types/audio.types';
+import { NoteState, PadConfig, TempoConfig, Sound } from '../../types/audio.types';
 
 export interface StudioScreenProps {
   app: LooperApp;
@@ -96,9 +96,20 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({
     audioEngine.setMasterVolume(volume);
   };
 
-  const handleSoundSelect = (sound: any) => {
-    // In a real app, would assign sound to selected pad
-    console.log('Selected sound:', sound);
+  const handleSoundSelect = (sound: Sound) => {
+    // Assign sound to the first empty pad or show pad selection UI
+    const emptyPad = pads.find(p => !p.soundId);
+    if (emptyPad) {
+      handlePadConfigChange(emptyPad.id, { soundId: sound.id });
+      // Preload the sound into the audio engine
+      const soundPackManager = app.getSoundPackManager();
+      const fullSound = soundPackManager.getSound(sound.id);
+      if (fullSound) {
+        audioEngine.loadSound(fullSound).catch(err => {
+          console.error('Failed to load sound:', err);
+        });
+      }
+    }
     setShowSoundBrowser(false);
   };
 

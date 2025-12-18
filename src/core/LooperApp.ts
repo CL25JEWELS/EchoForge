@@ -143,6 +143,21 @@ export class LooperApp {
   }
 }
 
+// Configuration service for environment variables
+const getConfig = () => {
+  // Use a safe default in browser environments
+  const isBrowser = typeof window !== 'undefined';
+  
+  return {
+    apiBaseUrl: isBrowser 
+      ? (window as any).__APP_CONFIG__?.apiBaseUrl || 'https://api.looperapp.com'
+      : (typeof process !== 'undefined' && process.env?.API_BASE_URL) || 'https://api.looperapp.com',
+    apiKey: isBrowser
+      ? undefined // Never expose API key in browser
+      : typeof process !== 'undefined' ? process.env?.API_KEY : undefined
+  };
+};
+
 // Export default configuration
 export const defaultConfig: LooperAppConfig = {
   audio: {
@@ -152,8 +167,8 @@ export const defaultConfig: LooperAppConfig = {
     maxPolyphony: 32
   },
   api: {
-    baseUrl: typeof process !== 'undefined' && process.env?.API_BASE_URL || 'https://api.looperapp.com',
-    apiKey: typeof process !== 'undefined' ? process.env?.API_KEY : undefined
+    baseUrl: getConfig().apiBaseUrl,
+    apiKey: getConfig().apiKey
   },
   storage: {
     storageType: 'local'
