@@ -79,8 +79,9 @@ const DiscoverScreen: React.FC = ({ navigation }: any) => {
   };
 
   const handleRemix = (trackId: string) => {
-    // Navigate to studio with remix data
-    console.log('Remix track:', trackId);
+    // TODO: Navigate to studio with remix data
+    // This will load the track's project data into the loop pad
+    navigation.navigate('Studio');
   };
 
   const renderTrack = ({ item }: { item: Track }) => (

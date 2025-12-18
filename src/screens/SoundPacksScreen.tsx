@@ -60,7 +60,11 @@ const SoundPacksScreen: React.FC = ({ navigation }: any) => {
   const renderSoundPack = ({ item }: { item: SoundPack }) => (
     <TouchableOpacity
       style={styles.packCard}
-      onPress={() => console.log('Selected pack:', item.name)}
+      onPress={() => {
+        // TODO: Load sound pack into loop pad
+        // This should assign sounds from the pack to the pads
+        navigation.goBack();
+      }}
       activeOpacity={0.8}
     >
       <View style={styles.packImage}>

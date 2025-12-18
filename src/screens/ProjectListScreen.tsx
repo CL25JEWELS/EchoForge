@@ -60,7 +60,11 @@ const ProjectListScreen: React.FC = ({ navigation }: any) => {
   const renderProject = ({ item }: { item: Project }) => (
     <TouchableOpacity
       style={styles.projectCard}
-      onPress={() => console.log('Load project:', item.id)}
+      onPress={() => {
+        // TODO: Load project into loop pad
+        // This should populate the loop pad with the saved project state
+        navigation.goBack();
+      }}
       activeOpacity={0.8}
     >
       <View style={styles.projectIcon}>

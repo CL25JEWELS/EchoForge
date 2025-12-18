@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../config/constants';
+import { Project, Track, User } from '../types';
 
 // Initialize Supabase client with AsyncStorage for auth persistence
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -26,7 +27,7 @@ export const db = {
     return data;
   },
 
-  async createProject(project: any) {
+  async createProject(project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) {
     const { data, error } = await supabase
       .from('projects')
       .insert(project)
@@ -37,7 +38,7 @@ export const db = {
     return data;
   },
 
-  async updateProject(id: string, updates: any) {
+  async updateProject(id: string, updates: Partial<Project>) {
     const { data, error } = await supabase
       .from('projects')
       .update(updates)
@@ -81,7 +82,7 @@ export const db = {
     return data;
   },
 
-  async createTrack(track: any) {
+  async createTrack(track: Omit<Track, 'id' | 'createdAt' | 'updatedAt' | 'likes' | 'plays' | 'remixCount'>) {
     const { data, error } = await supabase
       .from('tracks')
       .insert(track)
@@ -159,7 +160,7 @@ export const db = {
     return data;
   },
 
-  async updateUserProfile(userId: string, updates: any) {
+  async updateUserProfile(userId: string, updates: Partial<User>) {
     const { data, error } = await supabase
       .from('users')
       .update(updates)

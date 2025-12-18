@@ -85,13 +85,17 @@ const LoopPadScreen: React.FC = ({ navigation }: any) => {
 
   const saveProject = async () => {
     try {
+      // TODO: Replace with actual authenticated user ID from useAuth hook
+      // For demo purposes, using 'demo-user' as placeholder
+      const userId = 'demo-user';
+      
       const projectData = {
         name: projectName,
-        user_id: 'demo-user', // Replace with actual user ID
+        userId: userId,
         pads: pads,
         bpm: bpm,
-        sound_pack_id: 'default',
-        is_public: false,
+        soundPackId: 'default',
+        isPublic: false,
       };
 
       if (currentProject) {
