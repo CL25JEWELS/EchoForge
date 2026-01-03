@@ -1,6 +1,6 @@
 /**
  * Sound Pack Manager
- * 
+ *
  * Handles loading, caching, and managing sound packs
  */
 
@@ -26,7 +26,7 @@ export class SoundPackManager {
       const manifest: SoundPackManifest = await response.json();
 
       // Build full sound pack
-      const sounds: Sound[] = manifest.sounds.map(ref => ({
+      const sounds: Sound[] = manifest.sounds.map((ref) => ({
         id: ref.id,
         name: ref.name,
         category: ref.category,
@@ -72,18 +72,22 @@ export class SoundPackManager {
     }
 
     const results = await Promise.allSettled(
-      pack.sounds.map(sound => this.audioEngine.loadSound(sound))
+      pack.sounds.map((sound) => this.audioEngine.loadSound(sound))
     );
 
     // Count failures
-    const failures = results.filter(r => r.status === 'rejected');
+    const failures = results.filter((r) => r.status === 'rejected');
     if (failures.length > 0) {
-      console.warn(`[SoundPackManager] Failed to load ${failures.length} sounds from pack: ${pack.name}`);
+      console.warn(
+        `[SoundPackManager] Failed to load ${failures.length} sounds from pack: ${pack.name}`
+      );
       // In production, could emit event for UI notification
     }
 
     const successCount = results.length - failures.length;
-    console.log(`[SoundPackManager] Preloaded ${successCount}/${pack.sounds.length} sounds from pack: ${pack.name}`);
+    console.log(
+      `[SoundPackManager] Preloaded ${successCount}/${pack.sounds.length} sounds from pack: ${pack.name}`
+    );
   }
 
   /**
@@ -96,9 +100,7 @@ export class SoundPackManager {
     }
 
     // Unload all sounds from audio engine
-    const unloadPromises = pack.sounds.map(sound => 
-      this.audioEngine.unloadSound(sound.id)
-    );
+    const unloadPromises = pack.sounds.map((sound) => this.audioEngine.unloadSound(sound.id));
 
     await Promise.all(unloadPromises);
     this.loadedPacks.delete(packId);
@@ -126,28 +128,27 @@ export class SoundPackManager {
   searchSounds(filter: SoundPackFilter): Sound[] {
     const allSounds: Sound[] = [];
 
-    this.loadedPacks.forEach(pack => {
+    this.loadedPacks.forEach((pack) => {
       let sounds = pack.sounds;
 
       // Filter by category
       if (filter.category) {
-        sounds = sounds.filter(s => s.category === filter.category);
+        sounds = sounds.filter((s) => s.category === filter.category);
       }
 
       // Filter by search query
       if (filter.searchQuery) {
         const query = filter.searchQuery.toLowerCase();
-        sounds = sounds.filter(s => 
-          s.name.toLowerCase().includes(query) ||
-          s.metadata?.tags?.some(tag => tag.toLowerCase().includes(query))
+        sounds = sounds.filter(
+          (s) =>
+            s.name.toLowerCase().includes(query) ||
+            s.metadata?.tags?.some((tag) => tag.toLowerCase().includes(query))
         );
       }
 
       // Filter by tags
       if (filter.tags && filter.tags.length > 0) {
-        sounds = sounds.filter(s =>
-          s.metadata?.tags?.some(tag => filter.tags!.includes(tag))
-        );
+        sounds = sounds.filter((s) => s.metadata?.tags?.some((tag) => filter.tags!.includes(tag)));
       }
 
       allSounds.push(...sounds);
@@ -168,7 +169,7 @@ export class SoundPackManager {
    */
   getSound(soundId: string): Sound | undefined {
     for (const pack of this.loadedPacks.values()) {
-      const sound = pack.sounds.find(s => s.id === soundId);
+      const sound = pack.sounds.find((s) => s.id === soundId);
       if (sound) {
         return sound;
       }
@@ -209,7 +210,7 @@ export class SoundPackManager {
 
   private extractCategories(sounds: Sound[]): SoundCategory[] {
     const categories = new Set<SoundCategory>();
-    sounds.forEach(sound => categories.add(sound.category));
+    sounds.forEach((sound) => categories.add(sound.category));
     return Array.from(categories);
   }
 

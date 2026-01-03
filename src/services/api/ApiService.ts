@@ -1,6 +1,6 @@
 /**
  * API Service
- * 
+ *
  * Backend API client for social platform features
  */
 
@@ -77,10 +77,7 @@ export class ApiService {
   /**
    * Make HTTP request
    */
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
+  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.config.baseUrl}${endpoint}`;
     const response = await fetch(url, {
       ...options,
@@ -129,21 +126,26 @@ export class ApiService {
     const formData = new FormData();
     formData.append('title', params.title);
     formData.append('audioFile', params.audioFile);
-    formData.append('projectFile', new Blob([JSON.stringify(params.projectFile)], {
-      type: 'application/json'
-    }));
+    formData.append(
+      'projectFile',
+      new Blob([JSON.stringify(params.projectFile)], {
+        type: 'application/json'
+      })
+    );
 
     if (params.description) formData.append('description', params.description);
     if (params.coverImage) formData.append('coverImage', params.coverImage);
     if (params.tags) formData.append('tags', JSON.stringify(params.tags));
     if (params.isPublic !== undefined) formData.append('isPublic', String(params.isPublic));
-    if (params.isRemixable !== undefined) formData.append('isRemixable', String(params.isRemixable));
-    if (params.remixMetadata) formData.append('remixMetadata', JSON.stringify(params.remixMetadata));
+    if (params.isRemixable !== undefined)
+      formData.append('isRemixable', String(params.isRemixable));
+    if (params.remixMetadata)
+      formData.append('remixMetadata', JSON.stringify(params.remixMetadata));
 
     const response = await fetch(`${this.config.baseUrl}/tracks`, {
       method: 'POST',
       headers: {
-        ...(this.config.authToken && { 'Authorization': `Bearer ${this.config.authToken}` })
+        ...(this.config.authToken && { Authorization: `Bearer ${this.config.authToken}` })
       },
       body: formData
     });

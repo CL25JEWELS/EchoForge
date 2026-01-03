@@ -1,6 +1,6 @@
 /**
  * Audio Engine Interface
- * 
+ *
  * Core abstraction for real-time audio processing.
  * Implementations can target different platforms (Web Audio API, native, etc.)
  */

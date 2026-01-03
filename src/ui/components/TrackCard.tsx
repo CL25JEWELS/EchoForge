@@ -1,6 +1,6 @@
 /**
  * Track Card Component
- * 
+ *
  * Display a track with play button and metadata
  */
 
@@ -36,9 +36,7 @@ export const TrackCard: React.FC<TrackCardProps> = ({
         {track.coverImageUrl ? (
           <img src={track.coverImageUrl} alt={track.title} />
         ) : (
-          <div className="track-card__cover-placeholder">
-            🎵
-          </div>
+          <div className="track-card__cover-placeholder">🎵</div>
         )}
         {onPlay && (
           <button className="track-card__play-button" onClick={onPlay}>
@@ -49,22 +47,17 @@ export const TrackCard: React.FC<TrackCardProps> = ({
 
       <div className="track-card__content">
         <h3 className="track-card__title">{track.title}</h3>
-        
+
         {track.author && (
-          <div
-            className="track-card__author"
-            onClick={() => onUserClick?.(track.authorId)}
-          >
+          <div className="track-card__author" onClick={() => onUserClick?.(track.authorId)}>
             {track.author.displayName || track.author.username}
           </div>
         )}
 
-        {track.description && (
-          <p className="track-card__description">{track.description}</p>
-        )}
+        {track.description && <p className="track-card__description">{track.description}</p>}
 
         <div className="track-card__tags">
-          {track.tags.map(tag => (
+          {track.tags.map((tag) => (
             <span key={tag} className="track-card__tag">
               #{tag}
             </span>
@@ -81,15 +74,9 @@ export const TrackCard: React.FC<TrackCardProps> = ({
           <button className="track-card__stat" onClick={onLike}>
             ❤️ {track.stats.likes}
           </button>
-          <span className="track-card__stat">
-            💬 {track.stats.comments}
-          </span>
-          <span className="track-card__stat">
-            🎵 {track.stats.remixes}
-          </span>
-          <span className="track-card__stat">
-            ▶️ {track.stats.plays}
-          </span>
+          <span className="track-card__stat">💬 {track.stats.comments}</span>
+          <span className="track-card__stat">🎵 {track.stats.remixes}</span>
+          <span className="track-card__stat">▶️ {track.stats.plays}</span>
         </div>
 
         {track.isRemixable && onRemix && (

@@ -1,6 +1,6 @@
 /**
  * User Profile Component
- * 
+ *
  * Display user profile with tracks and stats
  */
 
@@ -41,18 +41,14 @@ export const UserProfile: React.FC<UserProfileProps> = ({
               {user.displayName?.[0] || user.username[0]}
             </div>
           )}
-          {user.metadata.verified && (
-            <span className="user-profile__verified">✓</span>
-          )}
+          {user.metadata.verified && <span className="user-profile__verified">✓</span>}
         </div>
 
         <div className="user-profile__info">
           <h1 className="user-profile__name">{user.displayName || user.username}</h1>
           <p className="user-profile__username">@{user.username}</p>
-          
-          {user.bio && (
-            <p className="user-profile__bio">{user.bio}</p>
-          )}
+
+          {user.bio && <p className="user-profile__bio">{user.bio}</p>}
 
           <div className="user-profile__stats">
             <span>
@@ -104,7 +100,7 @@ export const UserProfile: React.FC<UserProfileProps> = ({
       <div className="user-profile__tracks">
         <h2>Tracks</h2>
         <div className="user-profile__tracks-grid">
-          {tracks.map(track => (
+          {tracks.map((track) => (
             <div
               key={track.id}
               className="user-profile__track"
@@ -119,7 +115,9 @@ export const UserProfile: React.FC<UserProfileProps> = ({
               </div>
               <div className="user-profile__track-info">
                 <h3>{track.title}</h3>
-                <p>❤️ {track.stats.likes} · 💬 {track.stats.comments}</p>
+                <p>
+                  ❤️ {track.stats.likes} · 💬 {track.stats.comments}
+                </p>
               </div>
             </div>
           ))}

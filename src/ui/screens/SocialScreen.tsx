@@ -1,6 +1,6 @@
 /**
  * Social Feed Screen
- * 
+ *
  * Browse and discover tracks from the community
  */
 
@@ -14,10 +14,7 @@ export interface SocialScreenProps {
   className?: string;
 }
 
-export const SocialScreen: React.FC<SocialScreenProps> = ({
-  app,
-  className = ''
-}) => {
+export const SocialScreen: React.FC<SocialScreenProps> = ({ app, className = '' }) => {
   const [selectedFeedType, setSelectedFeedType] = useState<FeedType>(FeedType.TRENDING);
   const [feed, setFeed] = useState<Feed | null>(null);
   const [loading, setLoading] = useState(false);
@@ -47,10 +44,10 @@ export const SocialScreen: React.FC<SocialScreenProps> = ({
     try {
       const track = await apiService.getTrack(trackId);
       const projectFile = await apiService.downloadProjectFile(trackId);
-      
+
       // Load the project
       app.getProjectManager().loadProject(projectFile);
-      
+
       console.log('Loaded track:', track.title);
     } catch (error) {
       console.error('Failed to load track:', error);
@@ -71,12 +68,12 @@ export const SocialScreen: React.FC<SocialScreenProps> = ({
     try {
       const track = await apiService.getTrack(trackId);
       const projectFile = await apiService.downloadProjectFile(trackId);
-      
+
       // Load as new project for remixing
       const project = projectFile.project;
       project.id = `remix-${Date.now()}`;
       project.name = `${project.name} (Remix)`;
-      
+
       app.getProjectManager().loadProject({
         ...projectFile,
         project
@@ -100,7 +97,7 @@ export const SocialScreen: React.FC<SocialScreenProps> = ({
         page: nextPage,
         pageSize: 20
       });
-      
+
       // Append new tracks to existing feed
       if (feed && moreTracks) {
         setFeed({
