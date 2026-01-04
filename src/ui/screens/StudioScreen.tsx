@@ -1,6 +1,6 @@
 /**
  * Main Studio Screen
- * 
+ *
  * Main interface for creating music with pads
  */
 
@@ -16,10 +16,7 @@ export interface StudioScreenProps {
   className?: string;
 }
 
-export const StudioScreen: React.FC<StudioScreenProps> = ({
-  app,
-  className = ''
-}) => {
+export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' }) => {
   const [pads, setPads] = useState<PadConfig[]>([]);
   const [padStates, setPadStates] = useState<Map<string, NoteState>>(new Map());
   const [isPlaying, setIsPlaying] = useState(false);
@@ -49,7 +46,7 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({
     // Update pad states periodically
     const interval = setInterval(() => {
       const states = new Map<string, NoteState>();
-      project!.pads.forEach(pad => {
+      project!.pads.forEach((pad) => {
         states.set(pad.id, audioEngine.getPadState(pad.id));
       });
       setPadStates(states);
@@ -98,14 +95,14 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({
 
   const handleSoundSelect = (sound: Sound) => {
     // Assign sound to the first empty pad or show pad selection UI
-    const emptyPad = pads.find(p => !p.soundId);
+    const emptyPad = pads.find((p) => !p.soundId);
     if (emptyPad) {
       handlePadConfigChange(emptyPad.id, { soundId: sound.id });
       // Preload the sound into the audio engine
       const soundPackManager = app.getSoundPackManager();
       const fullSound = soundPackManager.getSound(sound.id);
       if (fullSound) {
-        audioEngine.loadSound(fullSound).catch(err => {
+        audioEngine.loadSound(fullSound).catch((err) => {
           console.error('Failed to load sound:', err);
         });
       }
@@ -119,9 +116,7 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({
     <div className={`studio-screen ${className}`}>
       <header className="studio-screen__header">
         <h1>Looper Studio</h1>
-        <button onClick={() => projectManager.saveProject()}>
-          💾 Save
-        </button>
+        <button onClick={() => projectManager.saveProject()}>💾 Save</button>
       </header>
 
       <main className="studio-screen__main">

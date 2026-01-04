@@ -1,6 +1,6 @@
 /**
  * Storage Service
- * 
+ *
  * Local and cloud storage for projects and user data
  */
 
@@ -64,7 +64,7 @@ export class StorageService {
 
     if (typeof localStorage !== 'undefined') {
       const prefix = `${this.storageKey}:project:`;
-      
+
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         if (key && key.startsWith(prefix)) {
@@ -144,7 +144,7 @@ export class StorageService {
   async clearAllLocal(): Promise<void> {
     if (typeof localStorage !== 'undefined') {
       const keysToRemove: string[] = [];
-      
+
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         if (key && key.startsWith(this.storageKey)) {
@@ -152,7 +152,7 @@ export class StorageService {
         }
       }
 
-      keysToRemove.forEach(key => localStorage.removeItem(key));
+      keysToRemove.forEach((key) => localStorage.removeItem(key));
       console.log(`[StorageService] Cleared ${keysToRemove.length} local items`);
     }
   }
@@ -164,7 +164,7 @@ export class StorageService {
    */
   async uploadAudioFile(_file: Blob, filename: string): Promise<string> {
     console.log(`[StorageService] Uploading audio file: ${filename}`);
-    
+
     // Placeholder - would use cloud storage SDK
     return `https://storage.example.com/audio/${filename}`;
   }
@@ -185,7 +185,7 @@ export class StorageService {
    */
   async uploadImageFile(_file: Blob, filename: string): Promise<string> {
     console.log(`[StorageService] Uploading image file: ${filename}`);
-    
+
     // Placeholder - would use cloud storage SDK
     return `https://storage.example.com/images/${filename}`;
   }
@@ -198,7 +198,7 @@ export class StorageService {
   async getCacheSize(): Promise<number> {
     if (typeof localStorage !== 'undefined') {
       let totalSize = 0;
-      
+
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         if (key && key.startsWith(this.storageKey)) {

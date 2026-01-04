@@ -1,6 +1,6 @@
 /**
  * Track Feed Component
- * 
+ *
  * Display a feed of tracks
  */
 
@@ -51,7 +51,7 @@ export const TrackFeed: React.FC<TrackFeedProps> = ({
       </div>
 
       <div className="track-feed__grid">
-        {feed.tracks.map(track => (
+        {feed.tracks.map((track) => (
           <TrackCard
             key={track.id}
             track={track}

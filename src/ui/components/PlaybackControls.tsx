@@ -1,6 +1,6 @@
 /**
  * Playback Controls Component
- * 
+ *
  * Transport controls for play/stop/record
  */
 
@@ -31,10 +31,7 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
   return (
     <div className={`playback-controls ${className}`}>
       <div className="playback-controls__transport">
-        <button
-          className="playback-controls__button"
-          onClick={isPlaying ? onStop : onPlay}
-        >
+        <button className="playback-controls__button" onClick={isPlaying ? onStop : onPlay}>
           {isPlaying ? '⏸ Stop' : '▶ Play'}
         </button>
       </div>
@@ -45,7 +42,7 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
           <input
             type="number"
             value={tempo.bpm}
-            onChange={e => onTempoChange({ bpm: Number(e.target.value) })}
+            onChange={(e) => onTempoChange({ bpm: Number(e.target.value) })}
             min={60}
             max={200}
           />
@@ -58,7 +55,7 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
           <input
             type="range"
             value={masterVolume}
-            onChange={e => onVolumeChange(Number(e.target.value))}
+            onChange={(e) => onVolumeChange(Number(e.target.value))}
             min={0}
             max={1}
             step={0.01}

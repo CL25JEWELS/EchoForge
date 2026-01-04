@@ -1,6 +1,6 @@
 /**
  * Pad Component
- * 
+ *
  * Individual pad button for triggering sounds
  */
 
@@ -15,13 +15,7 @@ export interface PadProps {
   className?: string;
 }
 
-export const Pad: React.FC<PadProps> = ({
-  config,
-  state,
-  onTrigger,
-  onStop,
-  className = ''
-}) => {
+export const Pad: React.FC<PadProps> = ({ config, state, onTrigger, onStop, className = '' }) => {
   const [isPressed, setIsPressed] = useState(false);
 
   const handleMouseDown = () => {
@@ -45,7 +39,9 @@ export const Pad: React.FC<PadProps> = ({
     isPressed && 'pad--pressed',
     isPlaying && 'pad--playing',
     isEmpty && 'pad--empty'
-  ].filter(Boolean).join(' ');
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <button

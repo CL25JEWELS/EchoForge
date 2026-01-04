@@ -1,6 +1,6 @@
 /**
  * Sound Browser Component
- * 
+ *
  * Browse and select sounds from loaded sound packs
  */
 
@@ -26,18 +26,18 @@ export const SoundBrowser: React.FC<SoundBrowserProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
 
   // Get all sounds from all packs
-  const allSounds = soundPacks.flatMap(pack => pack.sounds);
+  const allSounds = soundPacks.flatMap((pack) => pack.sounds);
 
   // Filter sounds
-  const filteredSounds = allSounds.filter(sound => {
+  const filteredSounds = allSounds.filter((sound) => {
     const matchesCategory = !selectedCategory || sound.category === selectedCategory;
-    const matchesSearch = !searchQuery || 
-      sound.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch =
+      !searchQuery || sound.name.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
   // Get unique categories
-  const categories = Array.from(new Set(allSounds.map(s => s.category)));
+  const categories = Array.from(new Set(allSounds.map((s) => s.category)));
 
   return (
     <div className={`sound-browser ${className}`}>
@@ -47,7 +47,7 @@ export const SoundBrowser: React.FC<SoundBrowserProps> = ({
           type="text"
           placeholder="Search sounds..."
           value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
+          onChange={(e) => setSearchQuery(e.target.value)}
           className="sound-browser__search"
         />
       </div>
@@ -59,7 +59,7 @@ export const SoundBrowser: React.FC<SoundBrowserProps> = ({
         >
           All
         </button>
-        {categories.map(category => (
+        {categories.map((category) => (
           <button
             key={category}
             className={selectedCategory === category ? 'active' : ''}
@@ -71,12 +71,8 @@ export const SoundBrowser: React.FC<SoundBrowserProps> = ({
       </div>
 
       <div className="sound-browser__list">
-        {filteredSounds.map(sound => (
-          <div
-            key={sound.id}
-            className="sound-browser__item"
-            onClick={() => onSoundSelect(sound)}
-          >
+        {filteredSounds.map((sound) => (
+          <div key={sound.id} className="sound-browser__item" onClick={() => onSoundSelect(sound)}>
             <span className="sound-browser__name">{sound.name}</span>
             <span className="sound-browser__category">{sound.category}</span>
           </div>

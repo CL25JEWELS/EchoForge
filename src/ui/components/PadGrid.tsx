@@ -1,6 +1,6 @@
 /**
  * Pad Grid Component
- * 
+ *
  * Grid layout of pads for the main interface
  */
 
@@ -36,7 +36,7 @@ export const PadGrid: React.FC<PadGridProps> = ({
         padding: '1rem'
       }}
     >
-      {pads.map(pad => (
+      {pads.map((pad) => (
         <Pad
           key={pad.id}
           config={pad}

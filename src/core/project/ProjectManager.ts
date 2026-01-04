@@ -1,6 +1,6 @@
 /**
  * Project Manager
- * 
+ *
  * Handles creating, saving, loading, and exporting projects
  */
 
@@ -42,7 +42,7 @@ export class ProjectManager {
 
     this.currentProject = project;
     this.applyProjectToEngine(project);
-    
+
     console.log(`[ProjectManager] Created new project: ${name}`);
     return project;
   }
@@ -52,13 +52,13 @@ export class ProjectManager {
    */
   loadProject(projectData: ProjectFile): Project {
     const project = projectData.project;
-    
+
     // Update timestamp
     project.metadata.updatedAt = new Date();
-    
+
     this.currentProject = project;
     this.applyProjectToEngine(project);
-    
+
     console.log(`[ProjectManager] Loaded project: ${project.name}`);
     return project;
   }
@@ -121,7 +121,7 @@ export class ProjectManager {
       return;
     }
 
-    const padIndex = this.currentProject.pads.findIndex(p => p.id === padId);
+    const padIndex = this.currentProject.pads.findIndex((p) => p.id === padId);
     if (padIndex === -1) {
       return;
     }
@@ -200,7 +200,7 @@ export class ProjectManager {
    */
   private createDefaultPads(): PadConfig[] {
     const pads: PadConfig[] = [];
-    
+
     // Create a 4x4 grid of pads
     for (let i = 0; i < 16; i++) {
       pads.push({
@@ -228,7 +228,7 @@ export class ProjectManager {
     this.audioEngine.setMasterVolume(project.masterVolume);
 
     // Configure all pads
-    project.pads.forEach(pad => {
+    project.pads.forEach((pad) => {
       this.audioEngine.configurePad(pad.id, pad);
     });
 
@@ -252,7 +252,7 @@ export class ProjectManager {
     // Sync pads
     const enginePads = this.audioEngine.getAllPads();
     enginePads.forEach((padConfig, padId) => {
-      const projectPadIndex = this.currentProject!.pads.findIndex(p => p.id === padId);
+      const projectPadIndex = this.currentProject!.pads.findIndex((p) => p.id === padId);
       if (projectPadIndex !== -1) {
         this.currentProject!.pads[projectPadIndex] = padConfig;
       }
@@ -268,7 +268,7 @@ export class ProjectManager {
     }
 
     const soundIds = new Set<string>();
-    this.currentProject.pads.forEach(pad => {
+    this.currentProject.pads.forEach((pad) => {
       if (pad.soundId) {
         soundIds.add(pad.soundId);
       }

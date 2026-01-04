@@ -1,6 +1,6 @@
 /**
  * Looper App Core
- * 
+ *
  * Main orchestrator for the looper app that coordinates
  * audio engine, project management, sound packs, and API
  */
@@ -60,7 +60,7 @@ export class LooperApp {
 
       // Load default sound pack
       this.soundPackManager.createDefaultPack();
-      
+
       // Mark as initialized
       this.initialized = true;
 
@@ -147,14 +147,17 @@ export class LooperApp {
 const getConfig = () => {
   // Use a safe default in browser environments
   const isBrowser = typeof window !== 'undefined';
-  
+
   return {
-    apiBaseUrl: isBrowser 
+    apiBaseUrl: isBrowser
       ? (window as any).__APP_CONFIG__?.apiBaseUrl || 'https://api.looperapp.com'
-      : (typeof process !== 'undefined' && process.env?.API_BASE_URL) || 'https://api.looperapp.com',
+      : (typeof process !== 'undefined' && process.env?.API_BASE_URL) ||
+        'https://api.looperapp.com',
     apiKey: isBrowser
       ? undefined // Never expose API key in browser
-      : typeof process !== 'undefined' ? process.env?.API_KEY : undefined
+      : typeof process !== 'undefined'
+        ? process.env?.API_KEY
+        : undefined
   };
 };
 

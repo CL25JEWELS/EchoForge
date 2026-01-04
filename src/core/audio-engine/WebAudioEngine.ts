@@ -1,6 +1,6 @@
 /**
  * Web Audio API Implementation
- * 
+ *
  * Platform-agnostic audio engine using Web Audio API.
  * Works in browsers and React Native with polyfills.
  */
@@ -54,8 +54,12 @@ export class WebAudioEngine implements IAudioEngine {
     // Create audio context
     this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
       sampleRate: engineConfig.sampleRate,
-      latencyHint: engineConfig.latencyMode === 'low' ? 'interactive' : 
-                   engineConfig.latencyMode === 'high-quality' ? 'playback' : 'balanced'
+      latencyHint:
+        engineConfig.latencyMode === 'low'
+          ? 'interactive'
+          : engineConfig.latencyMode === 'high-quality'
+            ? 'playback'
+            : 'balanced'
     });
 
     // Create master gain node
@@ -198,7 +202,7 @@ export class WebAudioEngine implements IAudioEngine {
     }
 
     // Stop all active voices for this pad
-    voices.forEach(voice => {
+    voices.forEach((voice) => {
       if (voice.state === NoteState.PLAYING) {
         voice.source.stop();
         voice.state = NoteState.STOPPED;
@@ -215,7 +219,7 @@ export class WebAudioEngine implements IAudioEngine {
       return NoteState.IDLE;
     }
 
-    return voices.some(v => v.state === NoteState.PLAYING) ? NoteState.PLAYING : NoteState.IDLE;
+    return voices.some((v) => v.state === NoteState.PLAYING) ? NoteState.PLAYING : NoteState.IDLE;
   }
 
   setMasterVolume(volume: number): void {
@@ -308,11 +312,13 @@ export class WebAudioEngine implements IAudioEngine {
 
   private updateMetrics(): void {
     let totalVoices = 0;
-    this.activeVoices.forEach(voices => {
-      totalVoices += voices.filter(v => v.state === NoteState.PLAYING).length;
+    this.activeVoices.forEach((voices) => {
+      totalVoices += voices.filter((v) => v.state === NoteState.PLAYING).length;
     });
 
     this.metrics.activeVoices = totalVoices;
-    this.metrics.latency = this.audioContext?.baseLatency ? this.audioContext.baseLatency * 1000 : 0;
+    this.metrics.latency = this.audioContext?.baseLatency
+      ? this.audioContext.baseLatency * 1000
+      : 0;
   }
 }
