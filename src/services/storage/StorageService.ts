@@ -14,10 +14,33 @@ import { createClient } from '@supabase/supabase-js';
 import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
+export interface FirebaseCredentials {
+  apiKey: string;
+  authDomain: string;
+  projectId: string;
+  storageBucket: string;
+  messagingSenderId: string;
+  appId: string;
+}
+
+export interface SupabaseCredentials {
+  url: string;
+  key: string;
+}
+
+export interface AwsCredentials {
+  accessKeyId: string;
+  secretAccessKey: string;
+  region: string;
+  bucketName: string;
+}
+
+export type CloudCredentials = FirebaseCredentials | SupabaseCredentials | AwsCredentials;
+
 export interface StorageConfig {
   storageType: 'local' | 'cloud';
   cloudProvider?: 'firebase' | 'supabase' | 'aws';
-  credentials?: any;
+  credentials?: CloudCredentials;
 }
 
 export class StorageService {
@@ -120,17 +143,18 @@ export class StorageService {
   }
 
   private async saveToFirebase(projectId: string, data: string): Promise<string> {
-    if (!this.config.credentials) {
+    const creds = this.config.credentials as FirebaseCredentials;
+    if (!creds || !creds.apiKey) {
       throw new Error('Firebase credentials missing');
     }
 
     const firebaseConfig = {
-      apiKey: this.config.credentials.apiKey,
-      authDomain: this.config.credentials.authDomain,
-      projectId: this.config.credentials.projectId,
-      storageBucket: this.config.credentials.storageBucket,
-      messagingSenderId: this.config.credentials.messagingSenderId,
-      appId: this.config.credentials.appId
+      apiKey: creds.apiKey,
+      authDomain: creds.authDomain,
+      projectId: creds.projectId,
+      storageBucket: creds.storageBucket,
+      messagingSenderId: creds.messagingSenderId,
+      appId: creds.appId
     };
 
     // Check if app is already initialized
@@ -143,11 +167,12 @@ export class StorageService {
   }
 
   private async saveToSupabase(projectId: string, data: string): Promise<string> {
-    if (!this.config.credentials || !this.config.credentials.url || !this.config.credentials.key) {
+    const creds = this.config.credentials as SupabaseCredentials;
+    if (!creds || !creds.url || !creds.key) {
       throw new Error('Supabase credentials missing');
     }
 
-    const supabase = createClient(this.config.credentials.url, this.config.credentials.key);
+    const supabase = createClient(creds.url, creds.key);
 
     // Assuming a bucket named 'projects' exists
     const { error } = await supabase.storage.from('projects').upload(`${projectId}.json`, data, {
@@ -167,28 +192,29 @@ export class StorageService {
   }
 
   private async saveToAws(projectId: string, data: string): Promise<string> {
+    const creds = this.config.credentials as AwsCredentials;
     if (
-      !this.config.credentials ||
-      !this.config.credentials.accessKeyId ||
-      !this.config.credentials.secretAccessKey ||
-      !this.config.credentials.region ||
-      !this.config.credentials.bucketName
+      !creds ||
+      !creds.accessKeyId ||
+      !creds.secretAccessKey ||
+      !creds.region ||
+      !creds.bucketName
     ) {
       throw new Error('AWS credentials missing');
     }
 
     const client = new S3Client({
-      region: this.config.credentials.region,
+      region: creds.region,
       credentials: {
-        accessKeyId: this.config.credentials.accessKeyId,
-        secretAccessKey: this.config.credentials.secretAccessKey
+        accessKeyId: creds.accessKeyId,
+        secretAccessKey: creds.secretAccessKey
       }
     });
 
     const key = `projects/${projectId}.json`;
 
     const command = new PutObjectCommand({
-      Bucket: this.config.credentials.bucketName,
+      Bucket: creds.bucketName,
       Key: key,
       Body: data,
       ContentType: 'application/json'
@@ -198,7 +224,7 @@ export class StorageService {
 
     // Generate a signed URL for immediate access
     const getCommand = new GetObjectCommand({
-      Bucket: this.config.credentials.bucketName,
+      Bucket: creds.bucketName,
       Key: key
     });
 
