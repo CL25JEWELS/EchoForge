@@ -14,10 +14,63 @@ import { createClient } from '@supabase/supabase-js';
 import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
+/**
+ * Firebase credentials configuration
+ * Required fields for Firebase cloud storage integration
+ */
+export interface FirebaseCredentials {
+  /** Firebase API key */
+  apiKey: string;
+  /** Firebase auth domain (e.g., 'project-id.firebaseapp.com') */
+  authDomain: string;
+  /** Firebase project ID */
+  projectId: string;
+  /** Firebase storage bucket name (e.g., 'project-id.appspot.com') */
+  storageBucket: string;
+  /** Firebase messaging sender ID */
+  messagingSenderId: string;
+  /** Firebase app ID */
+  appId: string;
+}
+
+/**
+ * Supabase credentials configuration
+ * Required fields for Supabase cloud storage integration
+ */
+export interface SupabaseCredentials {
+  /** Supabase project URL (e.g., 'https://xxx.supabase.co') */
+  url: string;
+  /** Supabase anon/service role key */
+  key: string;
+}
+
+/**
+ * AWS S3 credentials configuration
+ * Required fields for AWS S3 cloud storage integration
+ */
+export interface AwsCredentials {
+  /** AWS access key ID */
+  accessKeyId: string;
+  /** AWS secret access key */
+  secretAccessKey: string;
+  /** AWS region (e.g., 'us-east-1') */
+  region: string;
+  /** S3 bucket name */
+  bucketName: string;
+}
+
+/**
+ * Storage configuration for the StorageService
+ */
 export interface StorageConfig {
+  /** Type of storage: local or cloud */
   storageType: 'local' | 'cloud';
+  /** Cloud provider to use when storageType is 'cloud' */
   cloudProvider?: 'firebase' | 'supabase' | 'aws';
-  credentials?: any;
+  /** Provider-specific credentials. Type depends on cloudProvider value */
+  credentials?: FirebaseCredentials | SupabaseCredentials | AwsCredentials;
+  /** Optional: Expiration time in seconds for signed URLs (AWS only). Default: 3600 (1 hour) */
+  signedUrlExpiresIn?: number;
 }
 
 export class StorageService {
@@ -124,13 +177,29 @@ export class StorageService {
       throw new Error('Firebase credentials missing');
     }
 
+    const creds = this.config.credentials as FirebaseCredentials;
+    const requiredFields = [
+      'apiKey',
+      'authDomain',
+      'projectId',
+      'storageBucket',
+      'messagingSenderId',
+      'appId',
+    ] as const;
+
+    for (const field of requiredFields) {
+      if (creds[field] === undefined || creds[field] === null || creds[field] === '') {
+        throw new Error(`Firebase credential "${field}" is missing or empty`);
+      }
+    }
+
     const firebaseConfig = {
-      apiKey: this.config.credentials.apiKey,
-      authDomain: this.config.credentials.authDomain,
-      projectId: this.config.credentials.projectId,
-      storageBucket: this.config.credentials.storageBucket,
-      messagingSenderId: this.config.credentials.messagingSenderId,
-      appId: this.config.credentials.appId
+      apiKey: creds.apiKey,
+      authDomain: creds.authDomain,
+      projectId: creds.projectId,
+      storageBucket: creds.storageBucket,
+      messagingSenderId: creds.messagingSenderId,
+      appId: creds.appId,
     };
 
     // Check if app is already initialized
@@ -143,11 +212,16 @@ export class StorageService {
   }
 
   private async saveToSupabase(projectId: string, data: string): Promise<string> {
-    if (!this.config.credentials || !this.config.credentials.url || !this.config.credentials.key) {
+    if (!this.config.credentials) {
       throw new Error('Supabase credentials missing');
     }
 
-    const supabase = createClient(this.config.credentials.url, this.config.credentials.key);
+    const creds = this.config.credentials as SupabaseCredentials;
+    if (!creds.url || !creds.key) {
+      throw new Error('Supabase credentials missing');
+    }
+
+    const supabase = createClient(creds.url, creds.key);
 
     // Assuming a bucket named 'projects' exists
     const { error } = await supabase.storage.from('projects').upload(`${projectId}.json`, data, {
@@ -167,42 +241,48 @@ export class StorageService {
   }
 
   private async saveToAws(projectId: string, data: string): Promise<string> {
+    if (!this.config.credentials) {
+      throw new Error('AWS credentials missing');
+    }
+
+    const creds = this.config.credentials as AwsCredentials;
     if (
-      !this.config.credentials ||
-      !this.config.credentials.accessKeyId ||
-      !this.config.credentials.secretAccessKey ||
-      !this.config.credentials.region ||
-      !this.config.credentials.bucketName
+      !creds.accessKeyId ||
+      !creds.secretAccessKey ||
+      !creds.region ||
+      !creds.bucketName
     ) {
       throw new Error('AWS credentials missing');
     }
 
     const client = new S3Client({
-      region: this.config.credentials.region,
+      region: creds.region,
       credentials: {
-        accessKeyId: this.config.credentials.accessKeyId,
-        secretAccessKey: this.config.credentials.secretAccessKey
-      }
+        accessKeyId: creds.accessKeyId,
+        secretAccessKey: creds.secretAccessKey,
+      },
     });
 
     const key = `projects/${projectId}.json`;
 
     const command = new PutObjectCommand({
-      Bucket: this.config.credentials.bucketName,
+      Bucket: creds.bucketName,
       Key: key,
       Body: data,
-      ContentType: 'application/json'
+      ContentType: 'application/json',
     });
 
     await client.send(command);
 
     // Generate a signed URL for immediate access
     const getCommand = new GetObjectCommand({
-      Bucket: this.config.credentials.bucketName,
-      Key: key
+      Bucket: creds.bucketName,
+      Key: key,
     });
 
-    return await getSignedUrl(client, getCommand, { expiresIn: 3600 });
+    // Use configured expiration time or default to 3600 seconds (1 hour)
+    const expiresIn = this.config.signedUrlExpiresIn ?? 3600;
+    return await getSignedUrl(client, getCommand, { expiresIn });
   }
 
   /**

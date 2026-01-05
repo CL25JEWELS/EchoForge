@@ -138,6 +138,53 @@ describe('StorageService', () => {
           'Firebase credentials missing'
         );
       });
+
+      it('should throw if individual credential fields are missing', async () => {
+        const config: StorageConfig = {
+          storageType: 'cloud',
+          cloudProvider: 'firebase',
+          credentials: {
+            apiKey: 'key',
+            authDomain: 'domain',
+            projectId: 'pid',
+            storageBucket: 'bucket',
+            messagingSenderId: 'id',
+            appId: ''
+          } as any
+        };
+        const service = new StorageService(config);
+
+        await expect(service.saveProjectCloud(projectId, mockProjectFile)).rejects.toThrow(
+          'Firebase credential "appId" is missing or empty'
+        );
+      });
+
+      it('should handle Firebase upload errors', async () => {
+        const config: StorageConfig = {
+          storageType: 'cloud',
+          cloudProvider: 'firebase',
+          credentials: {
+            apiKey: 'key',
+            authDomain: 'domain',
+            projectId: 'pid',
+            storageBucket: 'bucket',
+            messagingSenderId: 'id',
+            appId: 'appid'
+          }
+        };
+
+        const mockRef = {};
+        (getApps as jest.Mock).mockReturnValue([]);
+        (getStorage as jest.Mock).mockReturnValue({});
+        (ref as jest.Mock).mockReturnValue(mockRef);
+        (uploadString as jest.Mock).mockRejectedValue(new Error('Upload failed'));
+
+        const service = new StorageService(config);
+
+        await expect(service.saveProjectCloud(projectId, mockProjectFile)).rejects.toThrow(
+          'Upload failed'
+        );
+      });
     });
 
     describe('Supabase', () => {
@@ -188,6 +235,33 @@ describe('StorageService', () => {
 
         await expect(service.saveProjectCloud(projectId, mockProjectFile)).rejects.toThrow(
           'Supabase credentials missing'
+        );
+      });
+
+      it('should handle Supabase upload errors', async () => {
+        const config: StorageConfig = {
+          storageType: 'cloud',
+          cloudProvider: 'supabase',
+          credentials: {
+            url: 'https://supabase.co',
+            key: 'key'
+          }
+        };
+
+        const mockUpload = jest
+          .fn()
+          .mockResolvedValue({ data: null, error: { message: 'Upload failed' } });
+        const mockFrom = jest.fn().mockReturnValue({
+          upload: mockUpload
+        });
+        const mockClient = { storage: { from: mockFrom } };
+
+        (createClient as jest.Mock).mockReturnValue(mockClient);
+
+        const service = new StorageService(config);
+
+        await expect(service.saveProjectCloud(projectId, mockProjectFile)).rejects.toThrow(
+          'Supabase upload failed: Upload failed'
         );
       });
     });
@@ -246,6 +320,61 @@ describe('StorageService', () => {
 
         await expect(service.saveProjectCloud(projectId, mockProjectFile)).rejects.toThrow(
           'AWS credentials missing'
+        );
+      });
+
+      it('should handle AWS upload errors', async () => {
+        const config: StorageConfig = {
+          storageType: 'cloud',
+          cloudProvider: 'aws',
+          credentials: {
+            accessKeyId: 'key',
+            secretAccessKey: 'secret',
+            region: 'us-east-1',
+            bucketName: 'my-bucket'
+          }
+        };
+
+        const mockSend = jest.fn().mockRejectedValue(new Error('S3 upload failed'));
+
+        (S3Client as unknown as jest.Mock).mockImplementation(() => ({
+          send: mockSend
+        }));
+
+        const service = new StorageService(config);
+
+        await expect(service.saveProjectCloud(projectId, mockProjectFile)).rejects.toThrow(
+          'S3 upload failed'
+        );
+      });
+
+      it('should use custom signedUrlExpiresIn when provided', async () => {
+        const config: StorageConfig = {
+          storageType: 'cloud',
+          cloudProvider: 'aws',
+          credentials: {
+            accessKeyId: 'key',
+            secretAccessKey: 'secret',
+            region: 'us-east-1',
+            bucketName: 'my-bucket'
+          },
+          signedUrlExpiresIn: 7200 // 2 hours
+        };
+
+        const mockSend = jest.fn().mockResolvedValue({});
+
+        (S3Client as unknown as jest.Mock).mockImplementation(() => ({
+          send: mockSend
+        }));
+        (getSignedUrl as jest.Mock).mockResolvedValue('https://signed.url');
+
+        const service = new StorageService(config);
+        await service.saveProjectCloud(projectId, mockProjectFile);
+
+        expect(getSignedUrl).toHaveBeenCalledWith(
+          expect.anything(),
+          expect.anything(),
+          { expiresIn: 7200 }
         );
       });
     });
