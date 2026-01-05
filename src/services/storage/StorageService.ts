@@ -217,8 +217,13 @@ export class StorageService {
     }
 
     const creds = this.config.credentials as SupabaseCredentials;
-    if (!creds.url || !creds.key) {
-      throw new Error('Supabase credentials missing');
+    
+    // Validate required fields
+    if (!creds.url || creds.url === '') {
+      throw new Error('Supabase credential "url" is missing or empty');
+    }
+    if (!creds.key || creds.key === '') {
+      throw new Error('Supabase credential "key" is missing or empty');
     }
 
     const supabase = createClient(creds.url, creds.key);
@@ -246,13 +251,13 @@ export class StorageService {
     }
 
     const creds = this.config.credentials as AwsCredentials;
-    if (
-      !creds.accessKeyId ||
-      !creds.secretAccessKey ||
-      !creds.region ||
-      !creds.bucketName
-    ) {
-      throw new Error('AWS credentials missing');
+    
+    // Validate required fields
+    const requiredFields = ['accessKeyId', 'secretAccessKey', 'region', 'bucketName'] as const;
+    for (const field of requiredFields) {
+      if (!creds[field] || creds[field] === '') {
+        throw new Error(`AWS credential "${field}" is missing or empty`);
+      }
     }
 
     const client = new S3Client({

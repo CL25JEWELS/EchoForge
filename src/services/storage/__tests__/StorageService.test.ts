@@ -140,17 +140,19 @@ describe('StorageService', () => {
       });
 
       it('should throw if individual credential fields are missing', async () => {
+        // Create a config with an empty appId field to test validation
+        const credentials = {
+          apiKey: 'key',
+          authDomain: 'domain',
+          projectId: 'pid',
+          storageBucket: 'bucket',
+          messagingSenderId: 'id',
+          appId: ''
+        };
         const config: StorageConfig = {
           storageType: 'cloud',
           cloudProvider: 'firebase',
-          credentials: {
-            apiKey: 'key',
-            authDomain: 'domain',
-            projectId: 'pid',
-            storageBucket: 'bucket',
-            messagingSenderId: 'id',
-            appId: ''
-          } as any
+          credentials: credentials as any
         };
         const service = new StorageService(config);
 
@@ -238,6 +240,23 @@ describe('StorageService', () => {
         );
       });
 
+      it('should throw if url is missing or empty', async () => {
+        const credentials = {
+          url: '',
+          key: 'test-key'
+        };
+        const config: StorageConfig = {
+          storageType: 'cloud',
+          cloudProvider: 'supabase',
+          credentials: credentials as any
+        };
+        const service = new StorageService(config);
+
+        await expect(service.saveProjectCloud(projectId, mockProjectFile)).rejects.toThrow(
+          'Supabase credential "url" is missing or empty'
+        );
+      });
+
       it('should handle Supabase upload errors', async () => {
         const config: StorageConfig = {
           storageType: 'cloud',
@@ -320,6 +339,25 @@ describe('StorageService', () => {
 
         await expect(service.saveProjectCloud(projectId, mockProjectFile)).rejects.toThrow(
           'AWS credentials missing'
+        );
+      });
+
+      it('should throw if individual credential fields are missing', async () => {
+        const credentials = {
+          accessKeyId: 'key',
+          secretAccessKey: 'secret',
+          region: '',
+          bucketName: 'my-bucket'
+        };
+        const config: StorageConfig = {
+          storageType: 'cloud',
+          cloudProvider: 'aws',
+          credentials: credentials as any
+        };
+        const service = new StorageService(config);
+
+        await expect(service.saveProjectCloud(projectId, mockProjectFile)).rejects.toThrow(
+          'AWS credential "region" is missing or empty'
         );
       });
 
