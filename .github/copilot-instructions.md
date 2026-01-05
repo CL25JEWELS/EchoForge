@@ -242,7 +242,7 @@ A loop pad is an interactive button/trigger in the pad grid that:
 ### Documentation
 - [Full Documentation](./DOCUMENTATION.md) - Complete architecture and usage guide
 - [API Specification](./API_SPEC.md) - Backend API endpoints and data models
-- [Architecture Deep Dive](./ARCHITECTURE.md) - Detailed technical specifications
+- [Architecture & Implementation](./ARCHITECTURE.md) - Detailed technical specifications and implementation summary
 
 ### Web Audio API References
 - [MDN Web Audio API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API)
