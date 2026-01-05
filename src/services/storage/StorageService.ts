@@ -14,6 +14,64 @@ import { createClient } from '@supabase/supabase-js';
 import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
+/**
+ * Configuration for the storage service
+ * 
+ * @interface StorageConfig
+ * @property {('local' | 'cloud')} storageType - The type of storage to use
+ * @property {('firebase' | 'supabase' | 'aws')} [cloudProvider] - Cloud provider to use (required when storageType is 'cloud')
+ * @property {object} [credentials] - Provider-specific credentials (required when storageType is 'cloud')
+ * 
+ * @example Firebase credentials structure
+ * ```typescript
+ * {
+ *   storageType: 'cloud',
+ *   cloudProvider: 'firebase',
+ *   credentials: {
+ *     apiKey: string,           // Firebase API key from project settings
+ *     authDomain: string,        // Firebase auth domain (e.g., 'project-id.firebaseapp.com')
+ *     projectId: string,         // Firebase project ID
+ *     storageBucket: string,     // Firebase storage bucket (e.g., 'project-id.appspot.com')
+ *     messagingSenderId: string, // Firebase Cloud Messaging sender ID
+ *     appId: string             // Firebase app ID
+ *   }
+ * }
+ * ```
+ * 
+ * @example Supabase credentials structure
+ * ```typescript
+ * {
+ *   storageType: 'cloud',
+ *   cloudProvider: 'supabase',
+ *   credentials: {
+ *     url: string,  // Supabase project URL (e.g., 'https://xxx.supabase.co')
+ *     key: string   // Supabase anon/service role key
+ *   }
+ * }
+ * ```
+ * 
+ * @example AWS S3 credentials structure
+ * ```typescript
+ * {
+ *   storageType: 'cloud',
+ *   cloudProvider: 'aws',
+ *   credentials: {
+ *     accessKeyId: string,     // AWS access key ID
+ *     secretAccessKey: string, // AWS secret access key
+ *     region: string,          // AWS region (e.g., 'us-east-1')
+ *     bucketName: string       // S3 bucket name
+ *   }
+ * }
+ * ```
+ * 
+ * @example Local storage configuration
+ * ```typescript
+ * {
+ *   storageType: 'local'
+ *   // No credentials needed for local storage
+ * }
+ * ```
+ */
 export interface StorageConfig {
   storageType: 'local' | 'cloud';
   cloudProvider?: 'firebase' | 'supabase' | 'aws';
