@@ -7,17 +7,25 @@
 import { ProjectFile } from '../../types/project.types';
 import { User } from '../../types/social.types';
 
+// Cloud SDK imports
+import { initializeApp, getApps, getApp } from 'firebase/app';
+import { getStorage, ref, uploadString, getDownloadURL } from 'firebase/storage';
+import { createClient } from '@supabase/supabase-js';
+import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+
 export interface StorageConfig {
   storageType: 'local' | 'cloud';
   cloudProvider?: 'firebase' | 'supabase' | 'aws';
-  credentials?: Record<string, string>;
+  credentials?: any;
 }
 
 export class StorageService {
   private storageKey = 'looper-app';
+  private config: StorageConfig;
 
-  constructor(_config: StorageConfig) {
-    // Store config for future cloud integration
+  constructor(config: StorageConfig) {
+    this.config = config;
   }
 
   // ===== Project Storage =====
@@ -92,10 +100,109 @@ export class StorageService {
   /**
    * Save project to cloud storage
    */
-  async saveProjectCloud(_projectId: string, _projectFile: ProjectFile): Promise<string> {
-    // This would integrate with Firebase, Supabase, or AWS
-    // TODO: Implement cloud storage integration
-    throw new Error('Cloud storage not implemented. Please configure a cloud storage provider.');
+  async saveProjectCloud(projectId: string, projectFile: ProjectFile): Promise<string> {
+    if (this.config.storageType !== 'cloud') {
+      throw new Error('Storage service is not configured for cloud storage');
+    }
+
+    const data = JSON.stringify(projectFile);
+
+    switch (this.config.cloudProvider) {
+      case 'firebase':
+        return this.saveToFirebase(projectId, data);
+      case 'supabase':
+        return this.saveToSupabase(projectId, data);
+      case 'aws':
+        return this.saveToAws(projectId, data);
+      default:
+        throw new Error(`Unsupported cloud provider: ${this.config.cloudProvider}`);
+    }
+  }
+
+  private async saveToFirebase(projectId: string, data: string): Promise<string> {
+    if (!this.config.credentials) {
+      throw new Error('Firebase credentials missing');
+    }
+
+    const firebaseConfig = {
+      apiKey: this.config.credentials.apiKey,
+      authDomain: this.config.credentials.authDomain,
+      projectId: this.config.credentials.projectId,
+      storageBucket: this.config.credentials.storageBucket,
+      messagingSenderId: this.config.credentials.messagingSenderId,
+      appId: this.config.credentials.appId
+    };
+
+    // Check if app is already initialized
+    const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+    const storage = getStorage(app);
+    const storageRef = ref(storage, `projects/${projectId}.json`);
+
+    await uploadString(storageRef, data);
+    return await getDownloadURL(storageRef);
+  }
+
+  private async saveToSupabase(projectId: string, data: string): Promise<string> {
+    if (!this.config.credentials || !this.config.credentials.url || !this.config.credentials.key) {
+      throw new Error('Supabase credentials missing');
+    }
+
+    const supabase = createClient(this.config.credentials.url, this.config.credentials.key);
+
+    // Assuming a bucket named 'projects' exists
+    const { error } = await supabase.storage.from('projects').upload(`${projectId}.json`, data, {
+      contentType: 'application/json',
+      upsert: true
+    });
+
+    if (error) {
+      throw new Error(`Supabase upload failed: ${error.message}`);
+    }
+
+    const {
+      data: { publicUrl }
+    } = supabase.storage.from('projects').getPublicUrl(`${projectId}.json`);
+
+    return publicUrl;
+  }
+
+  private async saveToAws(projectId: string, data: string): Promise<string> {
+    if (
+      !this.config.credentials ||
+      !this.config.credentials.accessKeyId ||
+      !this.config.credentials.secretAccessKey ||
+      !this.config.credentials.region ||
+      !this.config.credentials.bucketName
+    ) {
+      throw new Error('AWS credentials missing');
+    }
+
+    const client = new S3Client({
+      region: this.config.credentials.region,
+      credentials: {
+        accessKeyId: this.config.credentials.accessKeyId,
+        secretAccessKey: this.config.credentials.secretAccessKey
+      }
+    });
+
+    const key = `projects/${projectId}.json`;
+
+    const command = new PutObjectCommand({
+      Bucket: this.config.credentials.bucketName,
+      Key: key,
+      Body: data,
+      ContentType: 'application/json'
+    });
+
+    await client.send(command);
+
+    // Generate a signed URL for immediate access
+    const getCommand = new GetObjectCommand({
+      Bucket: this.config.credentials.bucketName,
+      Key: key
+    });
+
+    return await getSignedUrl(client, getCommand, { expiresIn: 3600 });
   }
 
   /**
