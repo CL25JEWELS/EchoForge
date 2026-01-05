@@ -28,12 +28,12 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
  *   storageType: 'cloud',
  *   cloudProvider: 'firebase',
  *   credentials: {
- *     apiKey: string,           // Firebase API key from project settings
- *     authDomain: string,        // Firebase auth domain (e.g., 'project-id.firebaseapp.com')
- *     projectId: string,         // Firebase project ID
- *     storageBucket: string,     // Firebase storage bucket (e.g., 'project-id.appspot.com')
+ *     apiKey: string, // Firebase API key from project settings
+ *     authDomain: string, // Firebase auth domain (e.g., 'project-id.firebaseapp.com')
+ *     projectId: string, // Firebase project ID
+ *     storageBucket: string, // Firebase storage bucket (e.g., 'project-id.appspot.com')
  *     messagingSenderId: string, // Firebase Cloud Messaging sender ID
- *     appId: string             // Firebase app ID
+ *     appId: string // Firebase app ID
  *   }
  * }
  * ```
@@ -44,8 +44,8 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
  *   storageType: 'cloud',
  *   cloudProvider: 'supabase',
  *   credentials: {
- *     url: string,  // Supabase project URL (e.g., 'https://xxx.supabase.co')
- *     key: string   // Supabase anon/service role key
+ *     url: string, // Supabase project URL (e.g., 'https://xxx.supabase.co')
+ *     key: string // Supabase anon/service role key
  *   }
  * }
  * ```
@@ -56,10 +56,10 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
  *   storageType: 'cloud',
  *   cloudProvider: 'aws',
  *   credentials: {
- *     accessKeyId: string,     // AWS access key ID
+ *     accessKeyId: string, // AWS access key ID
  *     secretAccessKey: string, // AWS secret access key
- *     region: string,          // AWS region (e.g., 'us-east-1')
- *     bucketName: string       // S3 bucket name
+ *     region: string, // AWS region (e.g., 'us-east-1')
+ *     bucketName: string // S3 bucket name
  *   }
  * }
  * ```
@@ -67,7 +67,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
  * @example Local storage configuration
  * ```typescript
  * {
- *   storageType: 'local'
+ *   storageType: 'local',
  *   // No credentials needed for local storage
  * }
  * ```
