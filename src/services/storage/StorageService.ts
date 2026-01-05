@@ -4,6 +4,10 @@
  * Local and cloud storage for projects and user data
  */
 
+import { initializeApp } from 'firebase/app';
+import { getStorage, ref, uploadBytes, getDownloadURL, getBytes } from 'firebase/storage';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { ProjectFile } from '../../types/project.types';
 import { User } from '../../types/social.types';
 
@@ -15,9 +19,55 @@ export interface StorageConfig {
 
 export class StorageService {
   private storageKey = 'looper-app';
+  private config: StorageConfig;
+  private firebaseStorage: any;
+  private supabaseClient: SupabaseClient | null = null;
+  private s3Client: S3Client | null = null;
 
-  constructor(_config: StorageConfig) {
-    // Store config for future cloud integration
+  constructor(config: StorageConfig) {
+    this.config = config;
+    this.initializeCloudProvider();
+  }
+
+  private initializeCloudProvider() {
+    if (this.config.storageType !== 'cloud' || !this.config.credentials) {
+      return;
+    }
+
+    try {
+      switch (this.config.cloudProvider) {
+        case 'firebase': {
+          const app = initializeApp(this.config.credentials);
+          this.firebaseStorage = getStorage(app);
+          break;
+        }
+        case 'supabase':
+          if (this.config.credentials.url && this.config.credentials.key) {
+            this.supabaseClient = createClient(
+              this.config.credentials.url,
+              this.config.credentials.key
+            );
+          }
+          break;
+        case 'aws':
+          if (
+            this.config.credentials.region &&
+            this.config.credentials.accessKeyId &&
+            this.config.credentials.secretAccessKey
+          ) {
+            this.s3Client = new S3Client({
+              region: this.config.credentials.region,
+              credentials: {
+                accessKeyId: this.config.credentials.accessKeyId,
+                secretAccessKey: this.config.credentials.secretAccessKey
+              }
+            });
+          }
+          break;
+      }
+    } catch (error) {
+      console.error('Failed to initialize cloud provider:', error);
+    }
   }
 
   // ===== Project Storage =====
@@ -92,18 +142,133 @@ export class StorageService {
   /**
    * Save project to cloud storage
    */
-  async saveProjectCloud(_projectId: string, _projectFile: ProjectFile): Promise<string> {
-    // This would integrate with Firebase, Supabase, or AWS
-    // TODO: Implement cloud storage integration
-    throw new Error('Cloud storage not implemented. Please configure a cloud storage provider.');
+  async saveProjectCloud(projectId: string, projectFile: ProjectFile): Promise<string> {
+    if (this.config.storageType !== 'cloud') {
+      throw new Error('Cloud storage not enabled');
+    }
+
+    const data = JSON.stringify(projectFile);
+    const blob = new Blob([data], { type: 'application/json' });
+    const fileName = `projects/${projectId}.json`;
+
+    switch (this.config.cloudProvider) {
+      case 'firebase': {
+        if (!this.firebaseStorage) throw new Error('Firebase not initialized');
+        const storageRef = ref(this.firebaseStorage, fileName);
+        await uploadBytes(storageRef, blob);
+        return await getDownloadURL(storageRef);
+      }
+
+      case 'supabase': {
+        if (!this.supabaseClient) throw new Error('Supabase not initialized');
+        const { data: supabaseData, error } = await this.supabaseClient.storage
+          .from('projects')
+          .upload(fileName, blob, { upsert: true });
+        if (error) throw error;
+        return supabaseData?.path || fileName;
+      }
+
+      case 'aws': {
+        if (!this.s3Client) throw new Error('AWS S3 not initialized');
+        if (!this.config.credentials?.bucketName) throw new Error('AWS Bucket name not configured');
+
+        const command = new PutObjectCommand({
+          Bucket: this.config.credentials.bucketName,
+          Key: fileName,
+          Body: data, // S3 accepts string body
+          ContentType: 'application/json'
+        });
+        await this.s3Client.send(command);
+        return `s3://${this.config.credentials.bucketName}/${fileName}`;
+      }
+
+      default:
+        throw new Error('Cloud provider not configured');
+    }
   }
 
   /**
    * Load project from cloud storage
    */
-  async loadProjectCloud(_projectId: string): Promise<ProjectFile | null> {
-    // TODO: Implement cloud storage integration
-    throw new Error('Cloud storage not implemented. Please configure a cloud storage provider.');
+  async loadProjectCloud(projectId: string): Promise<ProjectFile | null> {
+    if (this.config.storageType !== 'cloud') {
+      throw new Error('Cloud storage not enabled');
+    }
+
+    const fileName = `projects/${projectId}.json`;
+    let projectFile: ProjectFile | null = null;
+
+    switch (this.config.cloudProvider) {
+      case 'firebase': {
+        if (!this.firebaseStorage) throw new Error('Firebase not initialized');
+        const storageRef = ref(this.firebaseStorage, fileName);
+        try {
+          // getBytes is better for small JSON files than getDownloadURL + fetch
+          const arrayBuffer = await getBytes(storageRef);
+          const decoder = new TextDecoder();
+          const jsonString = decoder.decode(arrayBuffer);
+          projectFile = JSON.parse(jsonString);
+        } catch (error) {
+          console.error('Error loading from Firebase:', error);
+          return null;
+        }
+        break;
+      }
+
+      case 'supabase': {
+        if (!this.supabaseClient) throw new Error('Supabase not initialized');
+        const { data, error } = await this.supabaseClient.storage
+          .from('projects')
+          .download(fileName);
+
+        if (error) {
+          console.error('Error loading from Supabase:', error);
+          return null;
+        }
+
+        if (data) {
+          const text = await data.text();
+          projectFile = JSON.parse(text);
+        }
+        break;
+      }
+
+      case 'aws': {
+        if (!this.s3Client) throw new Error('AWS S3 not initialized');
+        if (!this.config.credentials?.bucketName) throw new Error('AWS Bucket name not configured');
+
+        try {
+          const command = new GetObjectCommand({
+            Bucket: this.config.credentials.bucketName,
+            Key: fileName
+          });
+          const response = await this.s3Client.send(command);
+          if (response.Body) {
+            const str = await response.Body.transformToString();
+            projectFile = JSON.parse(str);
+          }
+        } catch (error) {
+          console.error('Error loading from AWS S3:', error);
+          return null;
+        }
+        break;
+      }
+
+      default:
+        throw new Error('Cloud provider not configured');
+    }
+
+    if (projectFile) {
+      // Restore Date objects
+      if (projectFile.project.metadata.createdAt) {
+        projectFile.project.metadata.createdAt = new Date(projectFile.project.metadata.createdAt);
+      }
+      if (projectFile.project.metadata.updatedAt) {
+        projectFile.project.metadata.updatedAt = new Date(projectFile.project.metadata.updatedAt);
+      }
+    }
+
+    return projectFile;
   }
 
   // ===== User Data Storage =====
