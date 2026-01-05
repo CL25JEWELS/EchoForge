@@ -219,10 +219,10 @@ export class StorageService {
     const creds = this.config.credentials as SupabaseCredentials;
     
     // Validate required fields
-    if (!creds.url || creds.url === '') {
+    if (creds.url === undefined || creds.url === null || creds.url === '') {
       throw new Error('Supabase credential "url" is missing or empty');
     }
-    if (!creds.key || creds.key === '') {
+    if (creds.key === undefined || creds.key === null || creds.key === '') {
       throw new Error('Supabase credential "key" is missing or empty');
     }
 
@@ -255,7 +255,7 @@ export class StorageService {
     // Validate required fields
     const requiredFields = ['accessKeyId', 'secretAccessKey', 'region', 'bucketName'] as const;
     for (const field of requiredFields) {
-      if (!creds[field] || creds[field] === '') {
+      if (creds[field] === undefined || creds[field] === null || creds[field] === '') {
         throw new Error(`AWS credential "${field}" is missing or empty`);
       }
     }
