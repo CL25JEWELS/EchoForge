@@ -4,12 +4,35 @@
  * Main interface for creating music with pads
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { PadGrid } from '../components/PadGrid';
 import { PlaybackControls } from '../components/PlaybackControls';
 import { SoundBrowser } from '../components/SoundBrowser';
 import { LooperApp } from '../../core/LooperApp';
 import { NoteState, PadConfig, TempoConfig, Sound } from '../../types/audio.types';
+
+/**
+ * Compares two maps of pad states to see if they are equal.
+ * @param map1 The first map
+ * @param map2 The second map
+ * @returns True if the maps are equal, false otherwise
+ */
+const arePadStateMapsEqual = (
+  map1: Map<string, NoteState>,
+  map2: Map<string, NoteState>
+): boolean => {
+  if (map1.size !== map2.size) {
+    return false;
+  }
+
+  for (const [key, value] of map1) {
+    if (map2.get(key) !== value) {
+      return false;
+    }
+  }
+
+  return true;
+};
 
 export interface StudioScreenProps {
   app: LooperApp;
@@ -45,31 +68,52 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
 
     // Update pad states periodically
     const interval = setInterval(() => {
-      const states = new Map<string, NoteState>();
+      const newStates = new Map<string, NoteState>();
       project!.pads.forEach((pad) => {
-        states.set(pad.id, audioEngine.getPadState(pad.id));
+        newStates.set(pad.id, audioEngine.getPadState(pad.id));
       });
-      setPadStates(states);
+
+      // ⚡ Bolt: To make React.memo effective, we must avoid creating new object references
+      // if the state hasn't actually changed. By comparing the old and new state maps,
+      // we can prevent unnecessary state updates and re-renders of the entire PadGrid.
+      setPadStates((currentPadStates) => {
+        if (!arePadStateMapsEqual(currentPadStates, newStates)) {
+          return newStates;
+        }
+        return currentPadStates;
+      });
     }, 50);
 
     return () => clearInterval(interval);
   }, []);
 
-  const handlePadTrigger = (padId: string) => {
-    audioEngine.triggerPad(padId, { quantize: true });
-  };
+  // ⚡ Bolt: Memoize callback functions with useCallback to prevent re-creating them on every render.
+  // This ensures that child components like PadGrid don't receive new function props,
+  // which allows React.memo to effectively prevent unnecessary re-renders.
+  const handlePadTrigger = useCallback(
+    (padId: string) => {
+      audioEngine.triggerPad(padId, { quantize: true });
+    },
+    [audioEngine]
+  );
 
-  const handlePadStop = (padId: string) => {
-    audioEngine.stopPad(padId);
-  };
+  const handlePadStop = useCallback(
+    (padId: string) => {
+      audioEngine.stopPad(padId);
+    },
+    [audioEngine]
+  );
 
-  const handlePadConfigChange = (padId: string, config: Partial<PadConfig>) => {
-    projectManager.updatePad(padId, config);
-    const project = projectManager.getCurrentProject();
-    if (project) {
-      setPads([...project.pads]);
-    }
-  };
+  const handlePadConfigChange = useCallback(
+    (padId: string, config: Partial<PadConfig>) => {
+      projectManager.updatePad(padId, config);
+      const project = projectManager.getCurrentProject();
+      if (project) {
+        setPads([...project.pads]);
+      }
+    },
+    [projectManager]
+  );
 
   const handlePlay = () => {
     audioEngine.startClock();
