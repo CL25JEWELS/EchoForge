@@ -4,7 +4,7 @@
  * Display a feed of tracks
  */
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import { TrackCard } from './TrackCard';
 import { Feed, FeedType } from '../../types/social.types';
 
@@ -44,6 +44,12 @@ export const TrackFeed: React.FC<TrackFeedProps> = ({
     }
   };
 
+  // ⚡ Bolt: Memoize event handlers with useCallback to prevent re-creating functions on every render.
+  // This is crucial for React.memo to work effectively on child components like TrackCard.
+  const handlePlay = useCallback((trackId: string) => onTrackPlay?.(trackId), [onTrackPlay]);
+  const handleLike = useCallback((trackId: string) => onTrackLike?.(trackId), [onTrackLike]);
+  const handleRemix = useCallback((trackId: string) => onTrackRemix?.(trackId), [onTrackRemix]);
+
   return (
     <div className={`track-feed ${className}`}>
       <div className="track-feed__header">
@@ -55,9 +61,9 @@ export const TrackFeed: React.FC<TrackFeedProps> = ({
           <TrackCard
             key={track.id}
             track={track}
-            onPlay={() => onTrackPlay?.(track.id)}
-            onLike={() => onTrackLike?.(track.id)}
-            onRemix={() => onTrackRemix?.(track.id)}
+            onPlay={handlePlay}
+            onLike={handleLike}
+            onRemix={handleRemix}
             onUserClick={onUserClick}
           />
         ))}
