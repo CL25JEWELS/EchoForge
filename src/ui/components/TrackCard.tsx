@@ -9,14 +9,14 @@ import { Track } from '../../types/social.types';
 
 export interface TrackCardProps {
   track: Track;
-  onPlay?: () => void;
-  onLike?: () => void;
-  onRemix?: () => void;
+  onPlay?: (trackId: string) => void;
+  onLike?: (trackId: string) => void;
+  onRemix?: (trackId: string) => void;
   onUserClick?: (userId: string) => void;
   className?: string;
 }
 
-export const TrackCard: React.FC<TrackCardProps> = ({
+const TrackCardComponent: React.FC<TrackCardProps> = ({
   track,
   onPlay,
   onLike,
@@ -39,7 +39,7 @@ export const TrackCard: React.FC<TrackCardProps> = ({
           <div className="track-card__cover-placeholder">🎵</div>
         )}
         {onPlay && (
-          <button className="track-card__play-button" onClick={onPlay}>
+          <button className="track-card__play-button" onClick={() => onPlay(track.id)}>
             ▶
           </button>
         )}
@@ -71,7 +71,7 @@ export const TrackCard: React.FC<TrackCardProps> = ({
         </div>
 
         <div className="track-card__stats">
-          <button className="track-card__stat" onClick={onLike}>
+          <button className="track-card__stat" onClick={() => onLike?.(track.id)}>
             ❤️ {track.stats.likes}
           </button>
           <span className="track-card__stat">💬 {track.stats.comments}</span>
@@ -80,7 +80,7 @@ export const TrackCard: React.FC<TrackCardProps> = ({
         </div>
 
         {track.isRemixable && onRemix && (
-          <button className="track-card__remix-button" onClick={onRemix}>
+          <button className="track-card__remix-button" onClick={() => onRemix(track.id)}>
             🔁 Remix
           </button>
         )}
@@ -88,3 +88,12 @@ export const TrackCard: React.FC<TrackCardProps> = ({
     </div>
   );
 };
+
+/**
+ * ⚡ Bolt: Memoized TrackCard component to prevent unnecessary re-renders.
+ *
+ * This component is wrapped in React.memo to ensure it only re-renders when its props have changed.
+ * This is a significant performance improvement for feeds with many tracks, as it avoids
+ * re-rendering every card when the parent component's state changes.
+ */
+export const TrackCard = React.memo(TrackCardComponent);
