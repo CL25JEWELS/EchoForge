@@ -36,10 +36,11 @@ export const PadGrid: React.FC<PadGridProps> = React.memo(
         {pads.map((pad) => (
           <Pad
             key={pad.id}
+            id={pad.id}
             config={pad}
             state={padStates.get(pad.id) || NoteState.IDLE}
-            onTrigger={() => onPadTrigger(pad.id)}
-            onStop={() => onPadStop(pad.id)}
+            onTrigger={onPadTrigger}
+            onStop={onPadStop}
           />
         ))}
       </div>
