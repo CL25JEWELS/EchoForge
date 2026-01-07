@@ -16,7 +16,19 @@ export interface TrackCardProps {
   className?: string;
 }
 
-export const TrackCard: React.FC<TrackCardProps> = ({
+// Custom comparison function for React.memo. It intentionally ignores the onPlay,
+// onLike, and onRemix props because they are redefined on every render in the
+// parent component. This prevents unnecessary re-renders of the TrackCard when
+// only the callback handlers have changed.
+const areEqual = (prevProps: Readonly<TrackCardProps>, nextProps: Readonly<TrackCardProps>) => {
+  return (
+    JSON.stringify(prevProps.track) === JSON.stringify(nextProps.track) &&
+    prevProps.onUserClick === nextProps.onUserClick &&
+    prevProps.className === nextProps.className
+  );
+};
+
+const TrackCardComponent: React.FC<TrackCardProps> = ({
   track,
   onPlay,
   onLike,
@@ -88,3 +100,5 @@ export const TrackCard: React.FC<TrackCardProps> = ({
     </div>
   );
 };
+
+export const TrackCard = React.memo(TrackCardComponent, areEqual);
