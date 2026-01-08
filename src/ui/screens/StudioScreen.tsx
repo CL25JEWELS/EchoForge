@@ -115,27 +115,36 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
     [projectManager]
   );
 
-  const handlePlay = () => {
+  // ⚡ Bolt: Memoize playback control handlers to prevent re-renders in the PlaybackControls component.
+  // By wrapping these functions in useCallback, we ensure they have stable references across renders,
+  // allowing React.memo in the child component to skip unnecessary updates.
+  const handlePlay = useCallback(() => {
     audioEngine.startClock();
     setIsPlaying(true);
-  };
+  }, [audioEngine]);
 
-  const handleStop = () => {
+  const handleStop = useCallback(() => {
     audioEngine.stopClock();
     audioEngine.reset();
     setIsPlaying(false);
-  };
+  }, [audioEngine]);
 
-  const handleTempoChange = (newTempo: Partial<TempoConfig>) => {
-    const updatedTempo = { ...tempo, ...newTempo };
-    setTempo(updatedTempo);
-    projectManager.updateTempo(updatedTempo);
-  };
+  const handleTempoChange = useCallback(
+    (newTempo: Partial<TempoConfig>) => {
+      const updatedTempo = { ...tempo, ...newTempo };
+      setTempo(updatedTempo);
+      projectManager.updateTempo(updatedTempo);
+    },
+    [projectManager, tempo]
+  );
 
-  const handleVolumeChange = (volume: number) => {
-    setMasterVolume(volume);
-    audioEngine.setMasterVolume(volume);
-  };
+  const handleVolumeChange = useCallback(
+    (volume: number) => {
+      setMasterVolume(volume);
+      audioEngine.setMasterVolume(volume);
+    },
+    [audioEngine]
+  );
 
   const handleSoundSelect = (sound: Sound) => {
     // Assign sound to the first empty pad or show pad selection UI
