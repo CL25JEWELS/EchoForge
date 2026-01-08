@@ -38,6 +38,9 @@ export const PadGrid: React.FC<PadGridProps> = React.memo(
             key={pad.id}
             config={pad}
             state={padStates.get(pad.id) || NoteState.IDLE}
+            // ⚡ Bolt: Passing stable function references from props.
+            // Since Pad is memoized and accepts the ID in the callback,
+            // we avoid inline arrow functions here, preventing unnecessary re-renders.
             onTrigger={onPadTrigger}
             onStop={onPadStop}
           />
