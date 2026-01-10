@@ -18,7 +18,7 @@ export interface PlaybackControlsProps {
   className?: string;
 }
 
-export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
+export const PlaybackControls: React.FC<PlaybackControlsProps> = React.memo(({
   isPlaying,
   tempo,
   masterVolume,
@@ -65,4 +65,4 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
       </div>
     </div>
   );
-};
+});
