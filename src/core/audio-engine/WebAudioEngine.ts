@@ -68,6 +68,31 @@ export class WebAudioEngine implements IAudioEngine {
     this.masterGainNode.gain.value = 0.8;
 
     console.log('[AudioEngine] Initialized with sample rate:', this.audioContext.sampleRate);
+    console.log('[AudioEngine] Audio context state:', this.audioContext.state);
+  }
+
+  /**
+   * Resume audio context if suspended (required after user interaction)
+   */
+  async resumeAudioContext(): Promise<void> {
+    if (this.audioContext && this.audioContext.state === 'suspended') {
+      await this.audioContext.resume();
+      console.log('[AudioEngine] Audio context resumed');
+    }
+  }
+
+  /**
+   * Get audio context state
+   */
+  getAudioContextState(): AudioContextState {
+    return this.audioContext?.state ?? 'suspended';
+  }
+
+  /**
+   * Check if a sound is loaded
+   */
+  isSoundLoaded(soundId: string): boolean {
+    return this.sounds.has(soundId);
   }
 
   async shutdown(): Promise<void> {
@@ -122,6 +147,12 @@ export class WebAudioEngine implements IAudioEngine {
   triggerPad(padId: string, options: PlaybackOptions = {}): void {
     if (!this.audioContext || !this.masterGainNode) {
       throw new Error('AudioEngine not initialized');
+    }
+
+    // Check if audio context is suspended (requires user interaction)
+    if (this.audioContext.state === 'suspended') {
+      console.warn(`[AudioEngine] Audio context is suspended. User interaction required.`);
+      return;
     }
 
     const padConfig = this.pads.get(padId);

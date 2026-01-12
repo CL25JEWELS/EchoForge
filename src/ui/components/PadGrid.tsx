@@ -16,13 +16,24 @@ export interface PadGridProps {
   onPadConfigChange?: (padId: string, config: Partial<PadConfig>) => void;
   columns?: number;
   className?: string;
+  soundsLoading?: Set<string>;
+  isAudioReady?: boolean;
 }
 
 // ⚡ Bolt: Using React.memo to prevent unnecessary re-renders of the entire grid
 // When the parent component re-renders, PadGrid will only re-render if its props have changed.
 // This is a significant performance improvement, especially for large grids or frequent parent updates.
 export const PadGrid: React.FC<PadGridProps> = React.memo(
-  ({ pads, padStates, onPadTrigger, onPadStop, columns = 4, className = '' }) => {
+  ({
+    pads,
+    padStates,
+    onPadTrigger,
+    onPadStop,
+    columns = 4,
+    className = '',
+    soundsLoading = new Set(),
+    isAudioReady = true
+  }) => {
     return (
       <div
         className={`pad-grid ${className}`}
@@ -40,6 +51,8 @@ export const PadGrid: React.FC<PadGridProps> = React.memo(
             state={padStates.get(pad.id) || NoteState.IDLE}
             onTrigger={onPadTrigger}
             onStop={onPadStop}
+            isLoading={soundsLoading.has(pad.id)}
+            isAudioReady={isAudioReady}
           />
         ))}
       </div>
