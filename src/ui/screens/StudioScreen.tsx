@@ -112,6 +112,9 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
     return () => {
       audioEngine.offPadStateChange(handlePadStateChange);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Dependencies intentionally omitted - this is an initialization effect that should only run once on mount
+    // audioEngine, projectManager, and soundPackManager are stable references from the app instance
   }, []);
 
   // ⚡ Bolt: Memoize callback functions with useCallback to prevent re-creating them on every render.

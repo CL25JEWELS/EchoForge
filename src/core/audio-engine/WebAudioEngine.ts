@@ -238,10 +238,10 @@ export class WebAudioEngine implements IAudioEngine {
     });
 
     this.activeVoices.set(padId, []);
-    
+
     // Emit state change event
     this.emitPadStateChange(padId, NoteState.IDLE);
-    
+
     this.updateMetrics();
   }
 

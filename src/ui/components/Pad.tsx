@@ -72,14 +72,18 @@ export const Pad: React.FC<PadProps> = React.memo(
           {!isEmpty && (
             <>
               {isLoading && <div className="pad__spinner">⏳</div>}
-              {hasError && <div className="pad__error">⚠️</div>}
+              {hasError && (
+                <>
+                  <div className="pad__error">⚠️</div>
+                  {error && <div className="pad__error-message" title={error}>Error</div>}
+                </>
+              )}
               {!isLoading && !hasError && (
                 <>
                   <div className="pad__indicator" />
                   <div className="pad__label">{config.id}</div>
                 </>
               )}
-              {error && <div className="pad__error-message" title={error}>Error</div>}
             </>
           )}
         </div>
