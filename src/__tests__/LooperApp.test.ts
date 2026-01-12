@@ -5,7 +5,11 @@ jest.mock('../core/audio-engine/WebAudioEngine', () => {
   return {
     WebAudioEngine: jest.fn().mockImplementation(() => ({
       initialize: jest.fn().mockResolvedValue(undefined),
-      shutdown: jest.fn().mockResolvedValue(undefined)
+      shutdown: jest.fn().mockResolvedValue(undefined),
+      resumeAudioContext: jest.fn().mockResolvedValue(undefined),
+      isAudioContextReady: jest.fn().mockReturnValue(true),
+      onPadStateChange: jest.fn(),
+      offPadStateChange: jest.fn()
     }))
   };
 });
