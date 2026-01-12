@@ -232,7 +232,7 @@ export class WebAudioEngine implements IAudioEngine {
         }
       }
       voice.state = NoteState.STOPPED;
-      
+
       // Notify listeners if no more voices are playing
       const currentState = this.getPadState(padId);
       if (currentState === NoteState.IDLE) {
@@ -242,7 +242,7 @@ export class WebAudioEngine implements IAudioEngine {
 
     // Update metrics
     this.updateMetrics();
-    
+
     console.log(`[AudioEngine] Triggered pad ${padId}, voices: ${this.activeVoices.get(padId)?.length}`);
   }
 
@@ -262,10 +262,10 @@ export class WebAudioEngine implements IAudioEngine {
 
     this.activeVoices.set(padId, []);
     this.updateMetrics();
-    
+
     // Notify listeners of state change
     this.notifyStateChange(padId, NoteState.IDLE);
-    
+
     console.log(`[AudioEngine] Stopped pad ${padId}`);
   }
 

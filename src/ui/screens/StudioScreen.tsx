@@ -224,7 +224,7 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
     const emptyPad = pads.find((p) => !p.soundId);
     if (emptyPad) {
       handlePadConfigChange(emptyPad.id, { soundId: sound.id });
-      
+
       // Preload the sound into the audio engine
       const soundPackManager = app.getSoundPackManager();
       const fullSound = soundPackManager.getSound(sound.id);
@@ -254,17 +254,6 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
   };
 
   const soundPacks = soundPackManager.getAllSoundPacks();
-
-  // Helper functions to check sound loading state
-  const isPadLoading = (pad: PadConfig): boolean => {
-    if (!pad.soundId) return false;
-    return soundLoadingStates[pad.soundId]?.loading || false;
-  };
-
-  const getPadError = (pad: PadConfig): string | null => {
-    if (!pad.soundId) return null;
-    return soundLoadingStates[pad.soundId]?.error || null;
-  };
 
   return (
     <div className={`studio-screen ${className}`}>
