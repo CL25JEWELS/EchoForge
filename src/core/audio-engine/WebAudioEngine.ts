@@ -49,25 +49,32 @@ export class WebAudioEngine implements IAudioEngine {
     latency: 0,
     dropouts: 0
   };
+  private stateChangeCallbacks: Set<(padId: string, state: NoteState) => void> = new Set();
 
   async initialize(engineConfig: AudioEngineConfig): Promise<void> {
-    // Create audio context
-    this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
-      sampleRate: engineConfig.sampleRate,
-      latencyHint:
-        engineConfig.latencyMode === 'low'
-          ? 'interactive'
-          : engineConfig.latencyMode === 'high-quality'
-            ? 'playback'
-            : 'balanced'
-    });
+    try {
+      // Create audio context
+      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
+        sampleRate: engineConfig.sampleRate,
+        latencyHint:
+          engineConfig.latencyMode === 'low'
+            ? 'interactive'
+            : engineConfig.latencyMode === 'high-quality'
+              ? 'playback'
+              : 'balanced'
+      });
 
-    // Create master gain node
-    this.masterGainNode = this.audioContext.createGain();
-    this.masterGainNode.connect(this.audioContext.destination);
-    this.masterGainNode.gain.value = 0.8;
+      // Create master gain node
+      this.masterGainNode = this.audioContext.createGain();
+      this.masterGainNode.connect(this.audioContext.destination);
+      this.masterGainNode.gain.value = 0.8;
 
-    console.log('[AudioEngine] Initialized with sample rate:', this.audioContext.sampleRate);
+      console.log('[AudioEngine] Initialized with sample rate:', this.audioContext.sampleRate);
+      console.log('[AudioEngine] Audio context state:', this.audioContext.state);
+    } catch (error) {
+      console.error('[AudioEngine] Failed to initialize:', error);
+      throw error;
+    }
   }
 
   async shutdown(): Promise<void> {
@@ -82,7 +89,34 @@ export class WebAudioEngine implements IAudioEngine {
     this.sounds.clear();
     this.pads.clear();
     this.masterGainNode = null;
+    this.stateChangeCallbacks.clear();
     console.log('[AudioEngine] Shutdown complete');
+  }
+
+  async resumeAudioContext(): Promise<void> {
+    if (!this.audioContext) {
+      console.warn('[AudioEngine] Cannot resume: AudioContext not initialized');
+      return;
+    }
+
+    if (this.audioContext.state === 'suspended') {
+      try {
+        await this.audioContext.resume();
+        console.log('[AudioEngine] Audio context resumed successfully');
+      } catch (error) {
+        console.error('[AudioEngine] Failed to resume audio context:', error);
+        throw error;
+      }
+    } else {
+      console.log('[AudioEngine] Audio context already in state:', this.audioContext.state);
+    }
+  }
+
+  isAudioContextReady(): boolean {
+    if (!this.audioContext) {
+      return false;
+    }
+    return this.audioContext.state === 'running';
   }
 
   async loadSound(sound: Sound): Promise<void> {
@@ -121,7 +155,13 @@ export class WebAudioEngine implements IAudioEngine {
 
   triggerPad(padId: string, options: PlaybackOptions = {}): void {
     if (!this.audioContext || !this.masterGainNode) {
+      console.error('[AudioEngine] Cannot trigger pad: AudioEngine not initialized');
       throw new Error('AudioEngine not initialized');
+    }
+
+    if (!this.isAudioContextReady()) {
+      console.warn('[AudioEngine] Audio context not ready (state:', this.audioContext.state, ')');
+      console.warn('[AudioEngine] Call resumeAudioContext() on user interaction first');
     }
 
     const padConfig = this.pads.get(padId);
@@ -179,6 +219,9 @@ export class WebAudioEngine implements IAudioEngine {
     }
     this.activeVoices.get(padId)!.push(voice);
 
+    // Notify listeners of state change
+    this.notifyStateChange(padId, NoteState.PLAYING);
+
     // Cleanup when sound ends
     source.onended = () => {
       const voices = this.activeVoices.get(padId);
@@ -189,10 +232,18 @@ export class WebAudioEngine implements IAudioEngine {
         }
       }
       voice.state = NoteState.STOPPED;
+      
+      // Notify listeners if no more voices are playing
+      const currentState = this.getPadState(padId);
+      if (currentState === NoteState.IDLE) {
+        this.notifyStateChange(padId, NoteState.IDLE);
+      }
     };
 
     // Update metrics
     this.updateMetrics();
+    
+    console.log(`[AudioEngine] Triggered pad ${padId}, voices: ${this.activeVoices.get(padId)?.length}`);
   }
 
   stopPad(padId: string): void {
@@ -211,6 +262,11 @@ export class WebAudioEngine implements IAudioEngine {
 
     this.activeVoices.set(padId, []);
     this.updateMetrics();
+    
+    // Notify listeners of state change
+    this.notifyStateChange(padId, NoteState.IDLE);
+    
+    console.log(`[AudioEngine] Stopped pad ${padId}`);
   }
 
   getPadState(padId: string): NoteState {
@@ -320,5 +376,23 @@ export class WebAudioEngine implements IAudioEngine {
     this.metrics.latency = this.audioContext?.baseLatency
       ? this.audioContext.baseLatency * 1000
       : 0;
+  }
+
+  onPadStateChange(callback: (padId: string, state: NoteState) => void): void {
+    this.stateChangeCallbacks.add(callback);
+  }
+
+  offPadStateChange(callback: (padId: string, state: NoteState) => void): void {
+    this.stateChangeCallbacks.delete(callback);
+  }
+
+  private notifyStateChange(padId: string, state: NoteState): void {
+    this.stateChangeCallbacks.forEach((callback) => {
+      try {
+        callback(padId, state);
+      } catch (error) {
+        console.error('[AudioEngine] Error in state change callback:', error);
+      }
+    });
   }
 }
