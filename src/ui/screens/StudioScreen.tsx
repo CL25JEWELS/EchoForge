@@ -50,9 +50,7 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
   });
   const [masterVolume, setMasterVolume] = useState(0.8);
   const [showSoundBrowser, setShowSoundBrowser] = useState(false);
-  const [audioContextState, setAudioContextState] = useState<'suspended' | 'running' | 'closed'>(
-    'suspended'
-  );
+  const [audioContextState, setAudioContextState] = useState<AudioContextState>('suspended');
   const [isAudioInitialized, setIsAudioInitialized] = useState(false);
   const [soundsLoading, setSoundsLoading] = useState<Set<string>>(new Set());
 
@@ -82,23 +80,26 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
 
     // Preload sounds for configured pads
     const loadPadSounds = async () => {
-      const loadingSet = new Set<string>();
       for (const pad of project!.pads) {
         if (pad.soundId) {
-          loadingSet.add(pad.id);
           const sound = soundPackManager.getSound(pad.soundId);
           if (sound && !audioEngine.isSoundLoaded(pad.soundId)) {
+            setSoundsLoading((prev) => new Set(prev).add(pad.id));
             try {
               await audioEngine.loadSound(sound);
               console.log(`[StudioScreen] Preloaded sound for pad ${pad.id}`);
             } catch (err) {
               console.error(`[StudioScreen] Failed to preload sound for pad ${pad.id}:`, err);
+            } finally {
+              setSoundsLoading((prev) => {
+                const next = new Set(prev);
+                next.delete(pad.id);
+                return next;
+              });
             }
           }
-          loadingSet.delete(pad.id);
         }
       }
-      setSoundsLoading(new Set(loadingSet));
     };
 
     loadPadSounds();
