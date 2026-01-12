@@ -12,8 +12,14 @@ import {
   TempoConfig,
   AudioMetrics,
   NoteState,
-  Sound
+  Sound,
+  SoundLoadingInfo
 } from '../../types/audio.types';
+
+/**
+ * Callback for pad state changes
+ */
+export type PadStateChangeCallback = (padId: string, state: NoteState) => void;
 
 export interface IAudioEngine {
   /**
@@ -110,4 +116,24 @@ export interface IAudioEngine {
    * Reset the engine (stop all pads, reset clock)
    */
   reset(): void;
+
+  /**
+   * Resume the AudioContext (required for browser autoplay policies)
+   */
+  resumeAudioContext(): Promise<void>;
+
+  /**
+   * Register a callback for pad state changes
+   */
+  onPadStateChange(callback: PadStateChangeCallback): void;
+
+  /**
+   * Remove a pad state change callback
+   */
+  offPadStateChange(callback: PadStateChangeCallback): void;
+
+  /**
+   * Get loading state for a sound
+   */
+  getSoundLoadingState(soundId: string): SoundLoadingInfo;
 }
