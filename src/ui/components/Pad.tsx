@@ -12,7 +12,7 @@ export interface PadProps {
   state: NoteState;
   loadingState?: SoundLoadingState;
   error?: string;
-  onTrigger: (padId: string) => void;
+  onTrigger: (padId: string) => void | Promise<void>;
   onStop: (padId: string) => void;
   className?: string;
 }

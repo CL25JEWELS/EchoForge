@@ -11,7 +11,7 @@ import { SoundPack } from '../../types/soundpack.types';
 export interface SoundBrowserProps {
   soundPacks: SoundPack[];
   selectedCategory?: SoundCategory;
-  onSoundSelect: (sound: Sound) => void;
+  onSoundSelect: (sound: Sound) => void | Promise<void>;
   onCategoryChange: (category: SoundCategory | undefined) => void;
   className?: string;
 }

@@ -13,7 +13,7 @@ export interface PadGridProps {
   padStates: Map<string, NoteState>;
   soundLoadingStates?: Map<string, SoundLoadingState>;
   soundLoadingErrors?: Map<string, string>;
-  onPadTrigger: (padId: string) => void;
+  onPadTrigger: (padId: string) => void | Promise<void>;
   onPadStop: (padId: string) => void;
   onPadConfigChange?: (padId: string, config: Partial<PadConfig>) => void;
   columns?: number;
