@@ -63,7 +63,7 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
   useEffect(() => {
     // Initialize audio context state
     const updateAudioContextState = () => {
-      const state = (audioEngine as any).getAudioContextState?.() ?? 'suspended';
+      const state = audioEngine.getAudioContextState();
       setAudioContextState(state);
       setIsAudioInitialized(state === 'running');
     };
@@ -87,7 +87,7 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
         if (pad.soundId) {
           loadingSet.add(pad.id);
           const sound = soundPackManager.getSound(pad.soundId);
-          if (sound && !(audioEngine as any).isSoundLoaded?.(pad.soundId)) {
+          if (sound && !audioEngine.isSoundLoaded(pad.soundId)) {
             try {
               await audioEngine.loadSound(sound);
               console.log(`[StudioScreen] Preloaded sound for pad ${pad.id}`);
@@ -140,8 +140,8 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
   const handleUserInteraction = useCallback(async () => {
     if (audioContextState === 'suspended') {
       try {
-        await (audioEngine as any).resumeAudioContext?.();
-        const newState = (audioEngine as any).getAudioContextState?.() ?? 'running';
+        await audioEngine.resumeAudioContext();
+        const newState = audioEngine.getAudioContextState();
         setAudioContextState(newState);
         setIsAudioInitialized(newState === 'running');
         console.log('[StudioScreen] Audio context resumed after user interaction');
@@ -161,7 +161,7 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
       // Check if the sound is loaded
       const pad = pads.find((p) => p.id === padId);
       if (pad?.soundId) {
-        const isLoaded = (audioEngine as any).isSoundLoaded?.(pad.soundId);
+        const isLoaded = audioEngine.isSoundLoaded(pad.soundId);
         if (!isLoaded) {
           console.warn(`[StudioScreen] Sound ${pad.soundId} not loaded for pad ${padId}`);
           return;
