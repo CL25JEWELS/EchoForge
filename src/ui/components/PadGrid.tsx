@@ -6,12 +6,14 @@
 
 import React from 'react';
 import { Pad } from './Pad';
-import { PadConfig, NoteState } from '../../types/audio.types';
+import { PadConfig, NoteState, SoundLoadingState } from '../../types/audio.types';
 
 export interface PadGridProps {
   pads: PadConfig[];
   padStates: Map<string, NoteState>;
-  onPadTrigger: (padId: string) => void;
+  soundLoadingStates?: Map<string, SoundLoadingState>;
+  soundLoadingErrors?: Map<string, string>;
+  onPadTrigger: (padId: string) => void | Promise<void>;
   onPadStop: (padId: string) => void;
   onPadConfigChange?: (padId: string, config: Partial<PadConfig>) => void;
   columns?: number;
@@ -22,7 +24,16 @@ export interface PadGridProps {
 // When the parent component re-renders, PadGrid will only re-render if its props have changed.
 // This is a significant performance improvement, especially for large grids or frequent parent updates.
 export const PadGrid: React.FC<PadGridProps> = React.memo(
-  ({ pads, padStates, onPadTrigger, onPadStop, columns = 4, className = '' }) => {
+  ({
+    pads,
+    padStates,
+    soundLoadingStates,
+    soundLoadingErrors,
+    onPadTrigger,
+    onPadStop,
+    columns = 4,
+    className = ''
+  }) => {
     return (
       <div
         className={`pad-grid ${className}`}
@@ -33,15 +44,25 @@ export const PadGrid: React.FC<PadGridProps> = React.memo(
           padding: '1rem'
         }}
       >
-        {pads.map((pad) => (
-          <Pad
-            key={pad.id}
-            config={pad}
-            state={padStates.get(pad.id) || NoteState.IDLE}
-            onTrigger={onPadTrigger}
-            onStop={onPadStop}
-          />
-        ))}
+        {pads.map((pad) => {
+          const soundId = pad.soundId;
+          const loadingState = soundId
+            ? soundLoadingStates?.get(soundId)
+            : SoundLoadingState.NOT_LOADED;
+          const error = soundId ? soundLoadingErrors?.get(soundId) : undefined;
+
+          return (
+            <Pad
+              key={pad.id}
+              config={pad}
+              state={padStates.get(pad.id) || NoteState.IDLE}
+              loadingState={loadingState}
+              error={error}
+              onTrigger={onPadTrigger}
+              onStop={onPadStop}
+            />
+          );
+        })}
       </div>
     );
   }

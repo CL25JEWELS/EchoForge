@@ -4,35 +4,18 @@
  * Main interface for creating music with pads
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { PadGrid } from '../components/PadGrid';
 import { PlaybackControls } from '../components/PlaybackControls';
 import { SoundBrowser } from '../components/SoundBrowser';
 import { LooperApp } from '../../core/LooperApp';
-import { NoteState, PadConfig, TempoConfig, Sound } from '../../types/audio.types';
-
-/**
- * Compares two maps of pad states to see if they are equal.
- * @param map1 The first map
- * @param map2 The second map
- * @returns True if the maps are equal, false otherwise
- */
-const arePadStateMapsEqual = (
-  map1: Map<string, NoteState>,
-  map2: Map<string, NoteState>
-): boolean => {
-  if (map1.size !== map2.size) {
-    return false;
-  }
-
-  for (const [key, value] of map1) {
-    if (map2.get(key) !== value) {
-      return false;
-    }
-  }
-
-  return true;
-};
+import {
+  NoteState,
+  PadConfig,
+  TempoConfig,
+  Sound,
+  SoundLoadingState
+} from '../../types/audio.types';
 
 export interface StudioScreenProps {
   app: LooperApp;
@@ -42,6 +25,10 @@ export interface StudioScreenProps {
 export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' }) => {
   const [pads, setPads] = useState<PadConfig[]>([]);
   const [padStates, setPadStates] = useState<Map<string, NoteState>>(new Map());
+  const [soundLoadingStates, setSoundLoadingStates] = useState<Map<string, SoundLoadingState>>(
+    new Map()
+  );
+  const [soundLoadingErrors, setSoundLoadingErrors] = useState<Map<string, string>>(new Map());
   const [isPlaying, setIsPlaying] = useState(false);
   const [tempo, setTempo] = useState<TempoConfig>({
     bpm: 120,
@@ -50,48 +37,103 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
   });
   const [masterVolume, setMasterVolume] = useState(0.8);
   const [showSoundBrowser, setShowSoundBrowser] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const audioContextResumed = useRef(false);
 
   const audioEngine = app.getAudioEngine();
   const projectManager = app.getProjectManager();
   const soundPackManager = app.getSoundPackManager();
 
   useEffect(() => {
-    // Load current project or create new one
-    let project = projectManager.getCurrentProject();
-    if (!project) {
-      project = projectManager.createProject('New Project');
-    }
-
-    setPads(project.pads);
-    setTempo(project.tempo);
-    setMasterVolume(project.masterVolume);
-
-    // Update pad states periodically
-    const interval = setInterval(() => {
-      const newStates = new Map<string, NoteState>();
-      project!.pads.forEach((pad) => {
-        newStates.set(pad.id, audioEngine.getPadState(pad.id));
-      });
-
-      // ⚡ Bolt: To make React.memo effective, we must avoid creating new object references
-      // if the state hasn't actually changed. By comparing the old and new state maps,
-      // we can prevent unnecessary state updates and re-renders of the entire PadGrid.
-      setPadStates((currentPadStates) => {
-        if (!arePadStateMapsEqual(currentPadStates, newStates)) {
-          return newStates;
+    const initializeStudio = async () => {
+      try {
+        // Load current project or create new one
+        let project = projectManager.getCurrentProject();
+        if (!project) {
+          project = projectManager.createProject('New Project');
         }
-        return currentPadStates;
-      });
-    }, 50);
 
-    return () => clearInterval(interval);
+        setPads(project.pads);
+        setTempo(project.tempo);
+        setMasterVolume(project.masterVolume);
+
+        // Preload all sounds for the project
+        const soundsToLoad = project.pads
+          .filter((pad) => pad.soundId)
+          .map((pad) => pad.soundId as string);
+
+        const uniqueSoundIds = [...new Set(soundsToLoad)];
+
+        // Load each sound
+        for (const soundId of uniqueSoundIds) {
+          const sound = soundPackManager.getSound(soundId);
+          if (sound) {
+            try {
+              // Update loading state
+              setSoundLoadingStates((prev) => new Map(prev).set(soundId, SoundLoadingState.LOADING));
+
+              await audioEngine.loadSound(sound);
+
+              // Update to loaded state
+              setSoundLoadingStates((prev) => new Map(prev).set(soundId, SoundLoadingState.LOADED));
+            } catch (err) {
+              console.error(`Failed to load sound ${soundId}:`, err);
+              setSoundLoadingStates((prev) => new Map(prev).set(soundId, SoundLoadingState.ERROR));
+              setSoundLoadingErrors((prev) =>
+                new Map(prev).set(soundId, err instanceof Error ? err.message : 'Failed to load')
+              );
+            }
+          }
+        }
+
+        setIsLoading(false);
+      } catch (err) {
+        console.error('Failed to initialize studio:', err);
+        setError(err instanceof Error ? err.message : 'Failed to initialize studio');
+        setIsLoading(false);
+      }
+    };
+
+    initializeStudio();
+
+    // Set up event listener for pad state changes
+    const handlePadStateChange = (padId: string, state: NoteState) => {
+      setPadStates((prev) => {
+        const newStates = new Map(prev);
+        newStates.set(padId, state);
+        return newStates;
+      });
+    };
+
+    audioEngine.onPadStateChange(handlePadStateChange);
+
+    // Cleanup
+    return () => {
+      audioEngine.offPadStateChange(handlePadStateChange);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Dependencies intentionally omitted - this is an initialization effect that should only run once on mount
+    // audioEngine, projectManager, and soundPackManager are stable references from the app instance
   }, []);
 
   // ⚡ Bolt: Memoize callback functions with useCallback to prevent re-creating them on every render.
   // This ensures that child components like PadGrid don't receive new function props,
   // which allows React.memo to effectively prevent unnecessary re-renders.
   const handlePadTrigger = useCallback(
-    (padId: string) => {
+    async (padId: string) => {
+      // Resume AudioContext on first user interaction
+      if (!audioContextResumed.current) {
+        try {
+          await audioEngine.resumeAudioContext();
+          audioContextResumed.current = true;
+        } catch (err) {
+          console.error('Failed to resume audio context:', err);
+          setError('Failed to initialize audio. Please try again.');
+          return;
+        }
+      }
+
       audioEngine.triggerPad(padId, { quantize: true });
     },
     [audioEngine]
@@ -137,7 +179,7 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
     audioEngine.setMasterVolume(volume);
   };
 
-  const handleSoundSelect = (sound: Sound) => {
+  const handleSoundSelect = async (sound: Sound) => {
     // Assign sound to the first empty pad or show pad selection UI
     const emptyPad = pads.find((p) => !p.soundId);
     if (emptyPad) {
@@ -146,15 +188,52 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
       const soundPackManager = app.getSoundPackManager();
       const fullSound = soundPackManager.getSound(sound.id);
       if (fullSound) {
-        audioEngine.loadSound(fullSound).catch((err) => {
+        try {
+          setSoundLoadingStates((prev) =>
+            new Map(prev).set(sound.id, SoundLoadingState.LOADING)
+          );
+
+          await audioEngine.loadSound(fullSound);
+
+          setSoundLoadingStates((prev) => new Map(prev).set(sound.id, SoundLoadingState.LOADED));
+        } catch (err) {
           console.error('Failed to load sound:', err);
-        });
+          setSoundLoadingStates((prev) => new Map(prev).set(sound.id, SoundLoadingState.ERROR));
+          setSoundLoadingErrors((prev) =>
+            new Map(prev).set(sound.id, err instanceof Error ? err.message : 'Failed to load')
+          );
+        }
       }
     }
     setShowSoundBrowser(false);
   };
 
   const soundPacks = soundPackManager.getAllSoundPacks();
+
+  // Show loading screen while sounds are loading
+  if (isLoading) {
+    return (
+      <div className={`studio-screen studio-screen--loading ${className}`}>
+        <div className="studio-screen__loading-content">
+          <h2>Loading Studio...</h2>
+          <p>Preparing sounds and audio engine</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error screen if there's a critical error
+  if (error) {
+    return (
+      <div className={`studio-screen studio-screen--error ${className}`}>
+        <div className="studio-screen__error-content">
+          <h2>Error</h2>
+          <p>{error}</p>
+          <button onClick={() => window.location.reload()}>Reload</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`studio-screen ${className}`}>
@@ -178,6 +257,8 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
           <PadGrid
             pads={pads}
             padStates={padStates}
+            soundLoadingStates={soundLoadingStates}
+            soundLoadingErrors={soundLoadingErrors}
             onPadTrigger={handlePadTrigger}
             onPadStop={handlePadStop}
             onPadConfigChange={handlePadConfigChange}

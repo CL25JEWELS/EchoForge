@@ -30,6 +30,18 @@ export enum NoteState {
   STOPPED = 'stopped'
 }
 
+export enum SoundLoadingState {
+  NOT_LOADED = 'not_loaded',
+  LOADING = 'loading',
+  LOADED = 'loaded',
+  ERROR = 'error'
+}
+
+export interface SoundLoadingInfo {
+  state: SoundLoadingState;
+  error?: string;
+}
+
 export interface Sound {
   id: string;
   name: string;

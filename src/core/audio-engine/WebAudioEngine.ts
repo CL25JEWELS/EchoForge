@@ -13,9 +13,11 @@ import {
   AudioMetrics,
   NoteState,
   Sound,
-  PlaybackMode
+  PlaybackMode,
+  SoundLoadingState,
+  SoundLoadingInfo
 } from '../../types/audio.types';
-import { IAudioEngine } from './IAudioEngine';
+import { IAudioEngine, PadStateChangeCallback } from './IAudioEngine';
 
 interface LoadedSound {
   sound: Sound;
@@ -49,6 +51,8 @@ export class WebAudioEngine implements IAudioEngine {
     latency: 0,
     dropouts: 0
   };
+  private padStateChangeCallbacks: Set<PadStateChangeCallback> = new Set();
+  private soundLoadingStates: Map<string, SoundLoadingInfo> = new Map();
 
   async initialize(engineConfig: AudioEngineConfig): Promise<void> {
     // Create audio context
@@ -90,6 +94,11 @@ export class WebAudioEngine implements IAudioEngine {
       throw new Error('AudioEngine not initialized');
     }
 
+    // Set loading state
+    this.soundLoadingStates.set(sound.id, {
+      state: SoundLoadingState.LOADING
+    });
+
     try {
       // Fetch audio data
       const response = await fetch(sound.url);
@@ -103,8 +112,19 @@ export class WebAudioEngine implements IAudioEngine {
         buffer: audioBuffer
       });
 
+      // Set loaded state
+      this.soundLoadingStates.set(sound.id, {
+        state: SoundLoadingState.LOADED
+      });
+
       console.log(`[AudioEngine] Loaded sound: ${sound.name} (${sound.id})`);
     } catch (error) {
+      // Set error state
+      this.soundLoadingStates.set(sound.id, {
+        state: SoundLoadingState.ERROR,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+
       console.error(`[AudioEngine] Failed to load sound: ${sound.id}`, error);
       throw error;
     }
@@ -112,6 +132,7 @@ export class WebAudioEngine implements IAudioEngine {
 
   async unloadSound(soundId: string): Promise<void> {
     this.sounds.delete(soundId);
+    this.soundLoadingStates.delete(soundId);
     console.log(`[AudioEngine] Unloaded sound: ${soundId}`);
   }
 
@@ -179,6 +200,9 @@ export class WebAudioEngine implements IAudioEngine {
     }
     this.activeVoices.get(padId)!.push(voice);
 
+    // Emit state change event
+    this.emitPadStateChange(padId, NoteState.PLAYING);
+
     // Cleanup when sound ends
     source.onended = () => {
       const voices = this.activeVoices.get(padId);
@@ -186,6 +210,10 @@ export class WebAudioEngine implements IAudioEngine {
         const index = voices.indexOf(voice);
         if (index > -1) {
           voices.splice(index, 1);
+        }
+        // Emit state change if no more voices are playing
+        if (voices.length === 0) {
+          this.emitPadStateChange(padId, NoteState.IDLE);
         }
       }
       voice.state = NoteState.STOPPED;
@@ -210,6 +238,10 @@ export class WebAudioEngine implements IAudioEngine {
     });
 
     this.activeVoices.set(padId, []);
+
+    // Emit state change event
+    this.emitPadStateChange(padId, NoteState.IDLE);
+
     this.updateMetrics();
   }
 
@@ -320,5 +352,60 @@ export class WebAudioEngine implements IAudioEngine {
     this.metrics.latency = this.audioContext?.baseLatency
       ? this.audioContext.baseLatency * 1000
       : 0;
+  }
+
+  /**
+   * Resume the AudioContext
+   * Required for browser autoplay policies
+   */
+  async resumeAudioContext(): Promise<void> {
+    if (!this.audioContext) {
+      throw new Error('AudioEngine not initialized');
+    }
+
+    if (this.audioContext.state === 'suspended') {
+      await this.audioContext.resume();
+      console.log('[AudioEngine] AudioContext resumed');
+    } else {
+      console.log('[AudioEngine] AudioContext already running');
+    }
+  }
+
+  /**
+   * Register a callback for pad state changes
+   */
+  onPadStateChange(callback: PadStateChangeCallback): void {
+    this.padStateChangeCallbacks.add(callback);
+  }
+
+  /**
+   * Remove a pad state change callback
+   */
+  offPadStateChange(callback: PadStateChangeCallback): void {
+    this.padStateChangeCallbacks.delete(callback);
+  }
+
+  /**
+   * Get loading state for a sound
+   */
+  getSoundLoadingState(soundId: string): SoundLoadingInfo {
+    return (
+      this.soundLoadingStates.get(soundId) || {
+        state: SoundLoadingState.NOT_LOADED
+      }
+    );
+  }
+
+  /**
+   * Emit pad state change event to all registered callbacks
+   */
+  private emitPadStateChange(padId: string, state: NoteState): void {
+    this.padStateChangeCallbacks.forEach((callback) => {
+      try {
+        callback(padId, state);
+      } catch (error) {
+        console.error('[AudioEngine] Error in pad state change callback:', error);
+      }
+    });
   }
 }
