@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { Pad } from './Pad';
+import { PadWrapper } from './PadWrapper';
 import { PadConfig, NoteState } from '../../types/audio.types';
 
 export interface PadGridProps {
@@ -34,10 +34,10 @@ export const PadGrid: React.FC<PadGridProps> = React.memo(
         }}
       >
         {pads.map((pad) => (
-          <Pad
+          <PadWrapper
             key={pad.id}
             config={pad}
-            state={padStates.get(pad.id) || NoteState.IDLE}
+            padStates={padStates}
             onTrigger={onPadTrigger}
             onStop={onPadStop}
           />
