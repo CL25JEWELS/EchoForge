@@ -18,56 +18,53 @@ export interface TrackFeedProps {
   className?: string;
 }
 
-export const TrackFeed: React.FC<TrackFeedProps> = ({
-  feed,
-  onTrackPlay,
-  onTrackLike,
-  onTrackRemix,
-  onUserClick,
-  onLoadMore,
-  className = ''
-}) => {
-  const getFeedTitle = (type: FeedType): string => {
-    switch (type) {
-      case FeedType.TRENDING:
-        return '🔥 Trending';
-      case FeedType.NEW:
-        return '✨ New Releases';
-      case FeedType.RECOMMENDED:
-        return '💡 Recommended';
-      case FeedType.FOLLOWING:
-        return '👥 Following';
-      case FeedType.REMIXES:
-        return '🔁 Remixes';
-      default:
-        return 'Tracks';
-    }
-  };
+// Memoized to prevent re-renders when parent updates (e.g. loading state)
+export const TrackFeed = React.memo<TrackFeedProps>(
+  ({ feed, onTrackPlay, onTrackLike, onTrackRemix, onUserClick, onLoadMore, className = '' }) => {
+    const getFeedTitle = (type: FeedType): string => {
+      switch (type) {
+        case FeedType.TRENDING:
+          return '🔥 Trending';
+        case FeedType.NEW:
+          return '✨ New Releases';
+        case FeedType.RECOMMENDED:
+          return '💡 Recommended';
+        case FeedType.FOLLOWING:
+          return '👥 Following';
+        case FeedType.REMIXES:
+          return '🔁 Remixes';
+        default:
+          return 'Tracks';
+      }
+    };
 
-  return (
-    <div className={`track-feed ${className}`}>
-      <div className="track-feed__header">
-        <h2>{getFeedTitle(feed.type)}</h2>
+    return (
+      <div className={`track-feed ${className}`}>
+        <div className="track-feed__header">
+          <h2>{getFeedTitle(feed.type)}</h2>
+        </div>
+
+        <div className="track-feed__grid">
+          {feed.tracks.map((track) => (
+            <TrackCard
+              key={track.id}
+              track={track}
+              onPlay={onTrackPlay}
+              onLike={onTrackLike}
+              onRemix={onTrackRemix}
+              onUserClick={onUserClick}
+            />
+          ))}
+        </div>
+
+        {feed.pagination?.hasMore && onLoadMore && (
+          <button className="track-feed__load-more" onClick={onLoadMore}>
+            Load More
+          </button>
+        )}
       </div>
+    );
+  }
+);
 
-      <div className="track-feed__grid">
-        {feed.tracks.map((track) => (
-          <TrackCard
-            key={track.id}
-            track={track}
-            onPlay={() => onTrackPlay?.(track.id)}
-            onLike={() => onTrackLike?.(track.id)}
-            onRemix={() => onTrackRemix?.(track.id)}
-            onUserClick={onUserClick}
-          />
-        ))}
-      </div>
-
-      {feed.pagination?.hasMore && onLoadMore && (
-        <button className="track-feed__load-more" onClick={onLoadMore}>
-          Load More
-        </button>
-      )}
-    </div>
-  );
-};
+TrackFeed.displayName = 'TrackFeed';

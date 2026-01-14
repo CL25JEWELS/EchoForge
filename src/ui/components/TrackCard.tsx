@@ -9,82 +9,80 @@ import { Track } from '../../types/social.types';
 
 export interface TrackCardProps {
   track: Track;
-  onPlay?: () => void;
-  onLike?: () => void;
-  onRemix?: () => void;
+  onPlay?: (trackId: string) => void;
+  onLike?: (trackId: string) => void;
+  onRemix?: (trackId: string) => void;
   onUserClick?: (userId: string) => void;
   className?: string;
 }
 
-export const TrackCard: React.FC<TrackCardProps> = ({
-  track,
-  onPlay,
-  onLike,
-  onRemix,
-  onUserClick,
-  className = ''
-}) => {
-  const formatDuration = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+// Memoized to prevent re-renders when parent updates but track data is unchanged
+export const TrackCard = React.memo<TrackCardProps>(
+  ({ track, onPlay, onLike, onRemix, onUserClick, className = '' }) => {
+    const formatDuration = (seconds: number): string => {
+      const mins = Math.floor(seconds / 60);
+      const secs = Math.floor(seconds % 60);
+      return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
 
-  return (
-    <div className={`track-card ${className}`}>
-      <div className="track-card__cover">
-        {track.coverImageUrl ? (
-          <img src={track.coverImageUrl} alt={track.title} />
-        ) : (
-          <div className="track-card__cover-placeholder">🎵</div>
-        )}
-        {onPlay && (
-          <button className="track-card__play-button" onClick={onPlay}>
-            ▶
-          </button>
-        )}
-      </div>
+    return (
+      <div className={`track-card ${className}`}>
+        <div className="track-card__cover">
+          {track.coverImageUrl ? (
+            <img src={track.coverImageUrl} alt={track.title} />
+          ) : (
+            <div className="track-card__cover-placeholder">🎵</div>
+          )}
+          {onPlay && (
+            <button className="track-card__play-button" onClick={() => onPlay(track.id)}>
+              ▶
+            </button>
+          )}
+        </div>
 
-      <div className="track-card__content">
-        <h3 className="track-card__title">{track.title}</h3>
+        <div className="track-card__content">
+          <h3 className="track-card__title">{track.title}</h3>
 
-        {track.author && (
-          <div className="track-card__author" onClick={() => onUserClick?.(track.authorId)}>
-            {track.author.displayName || track.author.username}
+          {track.author && (
+            <div className="track-card__author" onClick={() => onUserClick?.(track.authorId)}>
+              {track.author.displayName || track.author.username}
+            </div>
+          )}
+
+          {track.description && <p className="track-card__description">{track.description}</p>}
+
+          <div className="track-card__tags">
+            {track.tags.map((tag) => (
+              <span key={tag} className="track-card__tag">
+                #{tag}
+              </span>
+            ))}
           </div>
-        )}
 
-        {track.description && <p className="track-card__description">{track.description}</p>}
+          <div className="track-card__meta">
+            <span>{formatDuration(track.duration)}</span>
+            <span>{track.bpm} BPM</span>
+            {track.key && <span>{track.key}</span>}
+          </div>
 
-        <div className="track-card__tags">
-          {track.tags.map((tag) => (
-            <span key={tag} className="track-card__tag">
-              #{tag}
-            </span>
-          ))}
+          <div className="track-card__stats">
+            <button className="track-card__stat" onClick={() => onLike?.(track.id)}>
+              ❤️ {track.stats.likes}
+            </button>
+            <span className="track-card__stat">💬 {track.stats.comments}</span>
+            <span className="track-card__stat">🎵 {track.stats.remixes}</span>
+            <span className="track-card__stat">▶️ {track.stats.plays}</span>
+          </div>
+
+          {track.isRemixable && onRemix && (
+            <button className="track-card__remix-button" onClick={() => onRemix(track.id)}>
+              🔁 Remix
+            </button>
+          )}
         </div>
-
-        <div className="track-card__meta">
-          <span>{formatDuration(track.duration)}</span>
-          <span>{track.bpm} BPM</span>
-          {track.key && <span>{track.key}</span>}
-        </div>
-
-        <div className="track-card__stats">
-          <button className="track-card__stat" onClick={onLike}>
-            ❤️ {track.stats.likes}
-          </button>
-          <span className="track-card__stat">💬 {track.stats.comments}</span>
-          <span className="track-card__stat">🎵 {track.stats.remixes}</span>
-          <span className="track-card__stat">▶️ {track.stats.plays}</span>
-        </div>
-
-        {track.isRemixable && onRemix && (
-          <button className="track-card__remix-button" onClick={onRemix}>
-            🔁 Remix
-          </button>
-        )}
       </div>
-    </div>
-  );
-};
+    );
+  }
+);
+
+TrackCard.displayName = 'TrackCard';
