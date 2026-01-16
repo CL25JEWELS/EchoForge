@@ -55,9 +55,9 @@ export const TrackFeed: React.FC<TrackFeedProps> = ({
           <TrackCard
             key={track.id}
             track={track}
-            onPlay={() => onTrackPlay?.(track.id)}
-            onLike={() => onTrackLike?.(track.id)}
-            onRemix={() => onTrackRemix?.(track.id)}
+            onPlay={onTrackPlay}
+            onLike={onTrackLike}
+            onRemix={onTrackRemix}
             onUserClick={onUserClick}
           />
         ))}
