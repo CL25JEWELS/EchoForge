@@ -4,8 +4,14 @@
  * Grid layout of pads for the main interface
  */
 
+/**
+ * Pad Grid Component
+ *
+ * Grid layout of pads for the main interface
+ */
+
 import React from 'react';
-import { Pad } from './Pad';
+import { PadWrapper } from './PadWrapper';
 import { PadConfig, NoteState } from '../../types/audio.types';
 
 export interface PadGridProps {
@@ -33,8 +39,12 @@ export const PadGrid: React.FC<PadGridProps> = React.memo(
           padding: '1rem'
         }}
       >
+        {/* ⚡ Bolt: Render PadWrapper instead of Pad directly.
+            This leverages the custom memoization in PadWrapper, ensuring that only
+            the pads whose state has actually changed will re-render. This is the
+            key to preventing the entire grid from re-rendering on every tick. */}
         {pads.map((pad) => (
-          <Pad
+          <PadWrapper
             key={pad.id}
             config={pad}
             state={padStates.get(pad.id) || NoteState.IDLE}
