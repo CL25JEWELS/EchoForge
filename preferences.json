@@ -10,5 +10,10 @@
   "passwordManager" : null,
   "encryptAllVaultData" : false,
   "workspaceLock" : null,
-  "apiKey" : "2763af04-e5c6-4713-b9d6-e7b10af811ca"
+  "apiKey" : "2763af04-e5c6-4713-b9d6-e7b10af811ca",
+  "iconSources" : [ {
+    "type" : "git",
+    "remote" : "https://github.com/CL25JEWELS/EchoForge.git",
+    "id" : "EchoForge"
+  } ]
 }
