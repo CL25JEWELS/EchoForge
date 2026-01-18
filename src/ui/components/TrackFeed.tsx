@@ -51,13 +51,15 @@ export const TrackFeed: React.FC<TrackFeedProps> = ({
       </div>
 
       <div className="track-feed__grid">
+        {/* ⚡ Bolt: Passing callbacks directly to allow TrackCard memoization to work effectively.
+            Previously, inline arrow functions caused TrackCard to re-render every time TrackFeed rendered. */}
         {feed.tracks.map((track) => (
           <TrackCard
             key={track.id}
             track={track}
-            onPlay={() => onTrackPlay?.(track.id)}
-            onLike={() => onTrackLike?.(track.id)}
-            onRemix={() => onTrackRemix?.(track.id)}
+            onPlay={onTrackPlay}
+            onLike={onTrackLike}
+            onRemix={onTrackRemix}
             onUserClick={onUserClick}
           />
         ))}
