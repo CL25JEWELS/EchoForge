@@ -7,7 +7,6 @@
 
 import React from 'react';
 import { Pad, PadProps } from './Pad';
-import { NoteState } from '../../types/audio.types';
 
 type PadWrapperProps = PadProps;
 
@@ -24,12 +23,16 @@ type PadWrapperProps = PadProps;
  * @returns True if the props are equal, false otherwise.
  */
 const areEqual = (prevProps: PadWrapperProps, nextProps: PadWrapperProps): boolean => {
+  // ⚡ Bolt: This custom comparison is critical for performance.
+  // It ensures that only the relevant pads re-render when their specific state or config changes.
+  // The bug was that `playbackMode` was not being compared, which could lead to stale UI.
   return (
     prevProps.state === nextProps.state &&
     prevProps.config.id === nextProps.config.id &&
     prevProps.config.soundId === nextProps.config.soundId &&
     prevProps.config.volume === nextProps.config.volume &&
     prevProps.config.pitch === nextProps.config.pitch &&
+    prevProps.config.playbackMode === nextProps.config.playbackMode && // Bug fix: Added this line
     prevProps.onTrigger === nextProps.onTrigger &&
     prevProps.onStop === nextProps.onStop
   );
