@@ -110,4 +110,19 @@ export interface IAudioEngine {
    * Reset the engine (stop all pads, reset clock)
    */
   reset(): void;
+
+  /**
+   * Resume audio context if suspended (required after user interaction)
+   */
+  resumeAudioContext(): Promise<void>;
+
+  /**
+   * Get audio context state
+   */
+  getAudioContextState(): AudioContextState;
+
+  /**
+   * Check if a sound is loaded
+   */
+  isSoundLoaded(soundId: string): boolean;
 }

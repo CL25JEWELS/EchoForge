@@ -50,12 +50,24 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
   });
   const [masterVolume, setMasterVolume] = useState(0.8);
   const [showSoundBrowser, setShowSoundBrowser] = useState(false);
+  const [audioContextState, setAudioContextState] = useState<AudioContextState>('suspended');
+  const [isAudioInitialized, setIsAudioInitialized] = useState(false);
+  const [soundsLoading, setSoundsLoading] = useState<Set<string>>(new Set());
 
   const audioEngine = app.getAudioEngine();
   const projectManager = app.getProjectManager();
   const soundPackManager = app.getSoundPackManager();
 
   useEffect(() => {
+    // Initialize audio context state
+    const updateAudioContextState = () => {
+      const state = audioEngine.getAudioContextState();
+      setAudioContextState(state);
+      setIsAudioInitialized(state === 'running');
+    };
+
+    updateAudioContextState();
+
     // Load current project or create new one
     let project = projectManager.getCurrentProject();
     if (!project) {
@@ -66,8 +78,35 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
     setTempo(project.tempo);
     setMasterVolume(project.masterVolume);
 
-    // Update pad states periodically
-    const interval = setInterval(() => {
+    // Preload sounds for configured pads
+    const loadPadSounds = async () => {
+      for (const pad of project!.pads) {
+        if (pad.soundId) {
+          const sound = soundPackManager.getSound(pad.soundId);
+          if (sound && !audioEngine.isSoundLoaded(pad.soundId)) {
+            setSoundsLoading((prev) => new Set(prev).add(pad.id));
+            try {
+              await audioEngine.loadSound(sound);
+              console.log(`[StudioScreen] Preloaded sound for pad ${pad.id}`);
+            } catch (err) {
+              console.error(`[StudioScreen] Failed to preload sound for pad ${pad.id}:`, err);
+            } finally {
+              setSoundsLoading((prev) => {
+                const next = new Set(prev);
+                next.delete(pad.id);
+                return next;
+              });
+            }
+          }
+        }
+      }
+    };
+
+    loadPadSounds();
+
+    // Update pad states using requestAnimationFrame for better performance
+    let animationFrameId: number;
+    const updatePadStates = () => {
       const newStates = new Map<string, NoteState>();
       project!.pads.forEach((pad) => {
         newStates.set(pad.id, audioEngine.getPadState(pad.id));
@@ -82,19 +121,61 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
         }
         return currentPadStates;
       });
-    }, 50);
 
-    return () => clearInterval(interval);
+      animationFrameId = requestAnimationFrame(updatePadStates);
+    };
+
+    animationFrameId = requestAnimationFrame(updatePadStates);
+
+    return () => {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+      }
+    };
   }, []);
 
   // ⚡ Bolt: Memoize callback functions with useCallback to prevent re-creating them on every render.
   // This ensures that child components like PadGrid don't receive new function props,
-  // which allows React.memo to effectively prevent unnecessary re-renders.
+  // which allows React.memo to effectively prevent re-renders.
+  
+  const handleUserInteraction = useCallback(async () => {
+    if (audioContextState === 'suspended') {
+      try {
+        await audioEngine.resumeAudioContext();
+        const newState = audioEngine.getAudioContextState();
+        setAudioContextState(newState);
+        setIsAudioInitialized(newState === 'running');
+        console.log('[StudioScreen] Audio context resumed after user interaction');
+      } catch (err) {
+        console.error('[StudioScreen] Failed to resume audio context:', err);
+      }
+    }
+  }, [audioContextState, audioEngine]);
+
   const handlePadTrigger = useCallback(
-    (padId: string) => {
-      audioEngine.triggerPad(padId, { quantize: true });
+    async (padId: string) => {
+      // Resume audio context if needed (browsers require user gesture)
+      if (audioContextState === 'suspended') {
+        await handleUserInteraction();
+      }
+
+      // Check if the sound is loaded
+      const pad = pads.find((p) => p.id === padId);
+      if (pad?.soundId) {
+        const isLoaded = audioEngine.isSoundLoaded(pad.soundId);
+        if (!isLoaded) {
+          console.warn(`[StudioScreen] Sound ${pad.soundId} not loaded for pad ${padId}`);
+          return;
+        }
+      }
+
+      try {
+        audioEngine.triggerPad(padId, { quantize: true });
+      } catch (err) {
+        console.error(`[StudioScreen] Failed to trigger pad ${padId}:`, err);
+      }
     },
-    [audioEngine]
+    [audioEngine, audioContextState, handleUserInteraction, pads]
   );
 
   const handlePadStop = useCallback(
@@ -137,29 +218,48 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
     audioEngine.setMasterVolume(volume);
   };
 
-  const handleSoundSelect = (sound: Sound) => {
-    // Assign sound to the first empty pad or show pad selection UI
-    const emptyPad = pads.find((p) => !p.soundId);
-    if (emptyPad) {
-      handlePadConfigChange(emptyPad.id, { soundId: sound.id });
-      // Preload the sound into the audio engine
-      const soundPackManager = app.getSoundPackManager();
-      const fullSound = soundPackManager.getSound(sound.id);
-      if (fullSound) {
-        audioEngine.loadSound(fullSound).catch((err) => {
-          console.error('Failed to load sound:', err);
-        });
+  const handleSoundSelect = useCallback(
+    async (sound: Sound) => {
+      // Assign sound to the first empty pad or show pad selection UI
+      const emptyPad = pads.find((p) => !p.soundId);
+      if (emptyPad) {
+        handlePadConfigChange(emptyPad.id, { soundId: sound.id });
+        
+        // Preload the sound into the audio engine
+        const soundPackManager = app.getSoundPackManager();
+        const fullSound = soundPackManager.getSound(sound.id);
+        if (fullSound) {
+          setSoundsLoading((prev) => new Set(prev).add(emptyPad.id));
+          try {
+            await audioEngine.loadSound(fullSound);
+            console.log(`[StudioScreen] Loaded sound ${sound.id}`);
+          } catch (err) {
+            console.error('[StudioScreen] Failed to load sound:', err);
+          } finally {
+            setSoundsLoading((prev) => {
+              const next = new Set(prev);
+              next.delete(emptyPad.id);
+              return next;
+            });
+          }
+        }
       }
-    }
-    setShowSoundBrowser(false);
-  };
+      setShowSoundBrowser(false);
+    },
+    [pads, handlePadConfigChange, app, audioEngine]
+  );
 
   const soundPacks = soundPackManager.getAllSoundPacks();
 
   return (
-    <div className={`studio-screen ${className}`}>
+    <div className={`studio-screen ${className}`} onClick={handleUserInteraction}>
       <header className="studio-screen__header">
         <h1>Looper Studio</h1>
+        {audioContextState === 'suspended' && (
+          <div className="audio-init-warning">
+            ⚠️ Click anywhere to enable audio
+          </div>
+        )}
         <button onClick={() => projectManager.saveProject()}>💾 Save</button>
       </header>
 
@@ -181,6 +281,8 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
             onPadTrigger={handlePadTrigger}
             onPadStop={handlePadStop}
             onPadConfigChange={handlePadConfigChange}
+            soundsLoading={soundsLoading}
+            isAudioReady={isAudioInitialized}
           />
         </div>
 
