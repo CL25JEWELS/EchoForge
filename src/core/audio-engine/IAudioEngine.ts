@@ -27,6 +27,17 @@ export interface IAudioEngine {
   shutdown(): Promise<void>;
 
   /**
+   * Resume the audio context if suspended
+   * Call this on first user interaction to enable audio
+   */
+  resumeAudioContext(): Promise<void>;
+
+  /**
+   * Check if the audio context is ready to play audio
+   */
+  isAudioContextReady(): boolean;
+
+  /**
    * Load a sound into memory
    */
   loadSound(sound: Sound): Promise<void>;
@@ -110,4 +121,15 @@ export interface IAudioEngine {
    * Reset the engine (stop all pads, reset clock)
    */
   reset(): void;
+
+  /**
+   * Register a callback for pad state changes
+   * Enables real-time updates instead of polling
+   */
+  onPadStateChange(callback: (padId: string, state: NoteState) => void): void;
+
+  /**
+   * Unregister a callback for pad state changes
+   */
+  offPadStateChange(callback: (padId: string, state: NoteState) => void): void;
 }

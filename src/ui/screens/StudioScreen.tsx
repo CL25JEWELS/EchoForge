@@ -39,6 +39,13 @@ export interface StudioScreenProps {
   className?: string;
 }
 
+interface SoundLoadingState {
+  [soundId: string]: {
+    loading: boolean;
+    error: string | null;
+  };
+}
+
 export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' }) => {
   const [pads, setPads] = useState<PadConfig[]>([]);
   const [padStates, setPadStates] = useState<Map<string, NoteState>>(new Map());
@@ -50,10 +57,54 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
   });
   const [masterVolume, setMasterVolume] = useState(0.8);
   const [showSoundBrowser, setShowSoundBrowser] = useState(false);
+  const [soundLoadingStates, setSoundLoadingStates] = useState<SoundLoadingState>({});
+  const [audioContextReady, setAudioContextReady] = useState(false);
+  const [hasResumedAudioContext, setHasResumedAudioContext] = useState(false);
 
   const audioEngine = app.getAudioEngine();
   const projectManager = app.getProjectManager();
   const soundPackManager = app.getSoundPackManager();
+
+  // Preload all sounds on mount
+  useEffect(() => {
+    const preloadSounds = async () => {
+      const project = projectManager.getCurrentProject();
+      if (!project) return;
+
+      const soundsToLoad = project.pads
+        .map((pad) => pad.soundId)
+        .filter((soundId): soundId is string => soundId !== null);
+
+      const uniqueSoundIds = Array.from(new Set(soundsToLoad));
+
+      for (const soundId of uniqueSoundIds) {
+        setSoundLoadingStates((prev) => ({
+          ...prev,
+          [soundId]: { loading: true, error: null }
+        }));
+
+        try {
+          const fullSound = soundPackManager.getSound(soundId);
+          if (fullSound) {
+            await audioEngine.loadSound(fullSound);
+            setSoundLoadingStates((prev) => ({
+              ...prev,
+              [soundId]: { loading: false, error: null }
+            }));
+          }
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to load sound';
+          console.error(`Failed to load sound ${soundId}:`, error);
+          setSoundLoadingStates((prev) => ({
+            ...prev,
+            [soundId]: { loading: false, error: errorMessage }
+          }));
+        }
+      }
+    };
+
+    preloadSounds();
+  }, [audioEngine, projectManager, soundPackManager]);
 
   useEffect(() => {
     // Load current project or create new one
@@ -66,7 +117,21 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
     setTempo(project.tempo);
     setMasterVolume(project.masterVolume);
 
-    // Update pad states periodically
+    // Check audio context state
+    setAudioContextReady(audioEngine.isAudioContextReady());
+
+    // Set up event-based state updates
+    const handlePadStateChange = (padId: string, state: NoteState) => {
+      setPadStates((currentStates) => {
+        const newStates = new Map(currentStates);
+        newStates.set(padId, state);
+        return newStates;
+      });
+    };
+
+    audioEngine.onPadStateChange(handlePadStateChange);
+
+    // Keep polling as fallback for browsers without full event support
     const interval = setInterval(() => {
       const newStates = new Map<string, NoteState>();
       project!.pads.forEach((pad) => {
@@ -82,19 +147,36 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
         }
         return currentPadStates;
       });
+
+      // Update audio context ready state
+      setAudioContextReady(audioEngine.isAudioContextReady());
     }, 50);
 
-    return () => clearInterval(interval);
-  }, []);
+    return () => {
+      clearInterval(interval);
+      audioEngine.offPadStateChange(handlePadStateChange);
+    };
+  }, [audioEngine, projectManager]);
 
   // ⚡ Bolt: Memoize callback functions with useCallback to prevent re-creating them on every render.
   // This ensures that child components like PadGrid don't receive new function props,
   // which allows React.memo to effectively prevent unnecessary re-renders.
   const handlePadTrigger = useCallback(
-    (padId: string) => {
+    async (padId: string) => {
+      // Resume audio context on first interaction
+      if (!hasResumedAudioContext) {
+        try {
+          await audioEngine.resumeAudioContext();
+          setHasResumedAudioContext(true);
+          setAudioContextReady(audioEngine.isAudioContextReady());
+        } catch (error) {
+          console.error('Failed to resume audio context:', error);
+        }
+      }
+
       audioEngine.triggerPad(padId, { quantize: true });
     },
-    [audioEngine]
+    [audioEngine, hasResumedAudioContext]
   );
 
   const handlePadStop = useCallback(
@@ -137,18 +219,35 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
     audioEngine.setMasterVolume(volume);
   };
 
-  const handleSoundSelect = (sound: Sound) => {
+  const handleSoundSelect = async (sound: Sound) => {
     // Assign sound to the first empty pad or show pad selection UI
     const emptyPad = pads.find((p) => !p.soundId);
     if (emptyPad) {
       handlePadConfigChange(emptyPad.id, { soundId: sound.id });
+
       // Preload the sound into the audio engine
       const soundPackManager = app.getSoundPackManager();
       const fullSound = soundPackManager.getSound(sound.id);
       if (fullSound) {
-        audioEngine.loadSound(fullSound).catch((err) => {
+        setSoundLoadingStates((prev) => ({
+          ...prev,
+          [sound.id]: { loading: true, error: null }
+        }));
+
+        try {
+          await audioEngine.loadSound(fullSound);
+          setSoundLoadingStates((prev) => ({
+            ...prev,
+            [sound.id]: { loading: false, error: null }
+          }));
+        } catch (err) {
+          const errorMessage = err instanceof Error ? err.message : 'Failed to load sound';
           console.error('Failed to load sound:', err);
-        });
+          setSoundLoadingStates((prev) => ({
+            ...prev,
+            [sound.id]: { loading: false, error: errorMessage }
+          }));
+        }
       }
     }
     setShowSoundBrowser(false);
@@ -160,6 +259,18 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
     <div className={`studio-screen ${className}`}>
       <header className="studio-screen__header">
         <h1>Looper Studio</h1>
+        {!audioContextReady && (
+          <div className="audio-context-warning" style={{ 
+            color: '#ff9800', 
+            fontSize: '14px', 
+            marginLeft: '16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            🔇 Click any pad to enable audio
+          </div>
+        )}
         <button onClick={() => projectManager.saveProject()}>💾 Save</button>
       </header>
 
