@@ -4,7 +4,7 @@
  * Individual pad button for triggering sounds
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { PadConfig, NoteState } from '../../types/audio.types';
 
 export interface PadProps {
@@ -47,6 +47,18 @@ export const Pad: React.FC<PadProps> = React.memo(
       .filter(Boolean)
       .join(' ');
 
+    // ⚡ Bolt: Memoize the style object to prevent re-creating it on every render.
+    // This avoids unnecessary work for the rendering engine, especially when
+    // many pads are on screen. The style only needs to be recalculated when
+    // volume or pitch actually change.
+    const style = useMemo(
+      () => ({
+        opacity: config.volume,
+        filter: `hue-rotate(${config.pitch * 10}deg)`
+      }),
+      [config.volume, config.pitch]
+    );
+
     return (
       <button
         className={padClasses}
@@ -54,10 +66,7 @@ export const Pad: React.FC<PadProps> = React.memo(
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
         disabled={isEmpty}
-        style={{
-          opacity: config.volume,
-          filter: `hue-rotate(${config.pitch * 10}deg)`
-        }}
+        style={style}
       >
         <div className="pad__content">
           {!isEmpty && (
