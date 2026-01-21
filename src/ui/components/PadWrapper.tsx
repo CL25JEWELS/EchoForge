@@ -7,7 +7,6 @@
 
 import React from 'react';
 import { Pad, PadProps } from './Pad';
-import { NoteState } from '../../types/audio.types';
 
 type PadWrapperProps = PadProps;
 
@@ -30,6 +29,11 @@ const areEqual = (prevProps: PadWrapperProps, nextProps: PadWrapperProps): boole
     prevProps.config.soundId === nextProps.config.soundId &&
     prevProps.config.volume === nextProps.config.volume &&
     prevProps.config.pitch === nextProps.config.pitch &&
+    prevProps.config.playbackMode === nextProps.config.playbackMode &&
+    prevProps.config.pan === nextProps.config.pan &&
+    prevProps.config.filterFrequency === nextProps.config.filterFrequency &&
+    prevProps.config.filterResonance === nextProps.config.filterResonance &&
+    prevProps.config.effects === nextProps.config.effects &&
     prevProps.onTrigger === nextProps.onTrigger &&
     prevProps.onStop === nextProps.onStop
   );

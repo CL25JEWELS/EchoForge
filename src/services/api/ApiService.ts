@@ -77,6 +77,18 @@ export class ApiService {
   /**
    * Make HTTP request
    */
+  /**
+   * Helper to convert pagination params to Record<string, string>
+   */
+  private toRecord(params?: PaginationParams): Record<string, string> {
+    const record: Record<string, string> = {};
+    if (params) {
+      if (params.page !== undefined) record.page = String(params.page);
+      if (params.pageSize !== undefined) record.pageSize = String(params.pageSize);
+    }
+    return record;
+  }
+
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.config.baseUrl}${endpoint}`;
     const response = await fetch(url, {
@@ -115,8 +127,8 @@ export class ApiService {
   async searchUsers(query: string, params?: PaginationParams): Promise<User[]> {
     const searchParams = new URLSearchParams({
       q: query,
-      ...params
-    } as any);
+      ...this.toRecord(params)
+    });
     return this.request<User[]>(`/users/search?${searchParams}`);
   }
 
@@ -173,7 +185,7 @@ export class ApiService {
   }
 
   async getUserTracks(userId: string, params?: PaginationParams): Promise<Track[]> {
-    const searchParams = new URLSearchParams(params as any);
+    const searchParams = new URLSearchParams(this.toRecord(params));
     return this.request<Track[]>(`/users/${userId}/tracks?${searchParams}`);
   }
 
@@ -184,7 +196,7 @@ export class ApiService {
   // ===== Feed API =====
 
   async getFeed(type: FeedType, params?: PaginationParams): Promise<Feed> {
-    const searchParams = new URLSearchParams(params as any);
+    const searchParams = new URLSearchParams(this.toRecord(params));
     return this.request<Feed>(`/feed/${type}?${searchParams}`);
   }
 
@@ -210,7 +222,7 @@ export class ApiService {
   // ===== Remix API =====
 
   async getRemixes(trackId: string, params?: PaginationParams): Promise<Track[]> {
-    const searchParams = new URLSearchParams(params as any);
+    const searchParams = new URLSearchParams(this.toRecord(params));
     return this.request<Track[]>(`/tracks/${trackId}/remixes?${searchParams}`);
   }
 
@@ -221,7 +233,7 @@ export class ApiService {
   // ===== Comments API =====
 
   async getComments(trackId: string, params?: PaginationParams): Promise<Comment[]> {
-    const searchParams = new URLSearchParams(params as any);
+    const searchParams = new URLSearchParams(this.toRecord(params));
     return this.request<Comment[]>(`/tracks/${trackId}/comments?${searchParams}`);
   }
 
@@ -258,7 +270,7 @@ export class ApiService {
   }
 
   async getLikedTracks(userId: string, params?: PaginationParams): Promise<Track[]> {
-    const searchParams = new URLSearchParams(params as any);
+    const searchParams = new URLSearchParams(this.toRecord(params));
     return this.request<Track[]>(`/users/${userId}/likes?${searchParams}`);
   }
 
@@ -273,12 +285,12 @@ export class ApiService {
   }
 
   async getFollowers(userId: string, params?: PaginationParams): Promise<User[]> {
-    const searchParams = new URLSearchParams(params as any);
+    const searchParams = new URLSearchParams(this.toRecord(params));
     return this.request<User[]>(`/users/${userId}/followers?${searchParams}`);
   }
 
   async getFollowing(userId: string, params?: PaginationParams): Promise<User[]> {
-    const searchParams = new URLSearchParams(params as any);
+    const searchParams = new URLSearchParams(this.toRecord(params));
     return this.request<User[]>(`/users/${userId}/following?${searchParams}`);
   }
 
@@ -294,7 +306,7 @@ export class ApiService {
   // ===== Notifications API =====
 
   async getNotifications(params?: PaginationParams): Promise<Notification[]> {
-    const searchParams = new URLSearchParams(params as any);
+    const searchParams = new URLSearchParams(this.toRecord(params));
     return this.request<Notification[]>(`/notifications?${searchParams}`);
   }
 
@@ -311,16 +323,16 @@ export class ApiService {
   async searchTracks(query: string, params?: PaginationParams): Promise<Track[]> {
     const searchParams = new URLSearchParams({
       q: query,
-      ...params
-    } as any);
+      ...this.toRecord(params)
+    });
     return this.request<Track[]>(`/tracks/search?${searchParams}`);
   }
 
   async searchByTag(tag: string, params?: PaginationParams): Promise<Track[]> {
     const searchParams = new URLSearchParams({
       tag,
-      ...params
-    } as any);
+      ...this.toRecord(params)
+    });
     return this.request<Track[]>(`/tracks/by-tag?${searchParams}`);
   }
 }
