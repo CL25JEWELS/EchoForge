@@ -38,7 +38,7 @@ export interface TimelineEvent {
   id: string;
   type: 'scene' | 'automation';
   timestamp: number; // beats or seconds
-  data: any;
+  data: unknown;
 }
 
 export interface ExportOptions {

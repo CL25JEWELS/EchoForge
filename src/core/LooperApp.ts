@@ -143,6 +143,12 @@ export class LooperApp {
   }
 }
 
+interface AppWindow extends Window {
+  __APP_CONFIG__?: {
+    apiBaseUrl?: string;
+  };
+}
+
 // Configuration service for environment variables
 const getConfig = () => {
   // Use a safe default in browser environments
@@ -150,7 +156,7 @@ const getConfig = () => {
 
   return {
     apiBaseUrl: isBrowser
-      ? (window as any).__APP_CONFIG__?.apiBaseUrl || 'https://api.looperapp.com'
+      ? (window as AppWindow).__APP_CONFIG__?.apiBaseUrl || 'https://api.looperapp.com'
       : (typeof process !== 'undefined' && process.env?.API_BASE_URL) ||
         'https://api.looperapp.com',
     apiKey: isBrowser
