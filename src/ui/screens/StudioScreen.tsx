@@ -9,7 +9,7 @@ import { PadGrid } from '../components/PadGrid';
 import { PlaybackControls } from '../components/PlaybackControls';
 import { SoundBrowser } from '../components/SoundBrowser';
 import { LooperApp } from '../../core/LooperApp';
-import { NoteState, PadConfig, TempoConfig, Sound } from '../../types/audio.types';
+import { NoteState, PadConfig, TempoConfig, Sound, SoundCategory } from '../../types/audio.types';
 
 /**
  * Compares two maps of pad states to see if they are equal.
@@ -50,6 +50,7 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
   });
   const [masterVolume, setMasterVolume] = useState(0.8);
   const [showSoundBrowser, setShowSoundBrowser] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<SoundCategory | undefined>();
 
   const audioEngine = app.getAudioEngine();
   const projectManager = app.getProjectManager();
@@ -137,6 +138,10 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
     audioEngine.setMasterVolume(volume);
   };
 
+  const handleCategoryChange = useCallback((category: SoundCategory | undefined) => {
+    setSelectedCategory(category);
+  }, []);
+
   const handleSoundSelect = (sound: Sound) => {
     // Assign sound to the first empty pad or show pad selection UI
     const emptyPad = pads.find((p) => !p.soundId);
@@ -160,7 +165,10 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
     <div className={`studio-screen ${className}`}>
       <header className="studio-screen__header">
         <h1>Looper Studio</h1>
-        <button onClick={() => projectManager.saveProject()}>💾 Save</button>
+        <div className="studio-screen__actions">
+          <button onClick={() => setShowSoundBrowser(true)}>🎵 Sounds</button>
+          <button onClick={() => projectManager.saveProject()}>💾 Save</button>
+        </div>
       </header>
 
       <main className="studio-screen__main">
@@ -189,8 +197,9 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
             <button onClick={() => setShowSoundBrowser(false)}>✕ Close</button>
             <SoundBrowser
               soundPacks={soundPacks}
+              selectedCategory={selectedCategory}
               onSoundSelect={handleSoundSelect}
-              onCategoryChange={() => {}}
+              onCategoryChange={handleCategoryChange}
             />
           </aside>
         )}

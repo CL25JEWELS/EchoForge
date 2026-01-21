@@ -39,7 +39,7 @@ export interface SoundReference {
   name: string;
   category: SoundCategory;
   filename: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface SoundPackFilter {

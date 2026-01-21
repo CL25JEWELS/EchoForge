@@ -17,6 +17,10 @@ import {
 } from '../../types/audio.types';
 import { IAudioEngine } from './IAudioEngine';
 
+interface WindowWithWebkit extends Window {
+  webkitAudioContext?: typeof AudioContext;
+}
+
 interface LoadedSound {
   sound: Sound;
   buffer: AudioBuffer;
@@ -52,7 +56,13 @@ export class WebAudioEngine implements IAudioEngine {
 
   async initialize(engineConfig: AudioEngineConfig): Promise<void> {
     // Create audio context
-    this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)({
+    const AudioContextClass =
+      window.AudioContext || (window as WindowWithWebkit).webkitAudioContext;
+    if (!AudioContextClass) {
+      throw new Error('Web Audio API is not supported in this environment');
+    }
+
+    this.audioContext = new AudioContextClass({
       sampleRate: engineConfig.sampleRate,
       latencyHint:
         engineConfig.latencyMode === 'low'
@@ -320,5 +330,9 @@ export class WebAudioEngine implements IAudioEngine {
     this.metrics.latency = this.audioContext?.baseLatency
       ? this.audioContext.baseLatency * 1000
       : 0;
+
+    // Explicitly initialize or reset values not yet tracked
+    this.metrics.cpuUsage = 0;
+    this.metrics.dropouts = 0;
   }
 }
