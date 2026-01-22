@@ -14,6 +14,48 @@ import React from 'react';
 import { PadWrapper } from './PadWrapper';
 import { PadConfig, NoteState } from '../../types/audio.types';
 
+// ⚡ Bolt: By creating a memoized wrapper for the Pad component, we can prevent
+// individual pads from re-rendering when another pad's state changes.
+// The custom comparison function ensures that a re-render only happens if the
+// specific pad's state or config has changed.
+interface PadWrapperProps {
+  pad: PadConfig;
+  padStates: Map<string, NoteState>;
+  onTrigger: (padId: string) => void;
+  onStop: (padId: string) => void;
+}
+
+const PadWrapper = React.memo<PadWrapperProps>(
+  ({ pad, padStates, onTrigger, onStop }) => {
+    return (
+      <Pad
+        config={pad}
+        state={padStates.get(pad.id) || NoteState.IDLE}
+        onTrigger={onTrigger}
+        onStop={onStop}
+      />
+    );
+  },
+  (prevProps, nextProps) => {
+    if (prevProps.pad !== nextProps.pad) {
+      return false;
+    }
+    if (
+      prevProps.onTrigger !== nextProps.onTrigger ||
+      prevProps.onStop !== nextProps.onStop
+    ) {
+      return false;
+    }
+    const oldState = prevProps.padStates.get(prevProps.pad.id) || NoteState.IDLE;
+    const newState = nextProps.padStates.get(nextProps.pad.id) || NoteState.IDLE;
+    if (oldState !== newState) {
+      return false;
+    }
+    return true;
+  }
+);
+PadWrapper.displayName = 'PadWrapper';
+
 export interface PadGridProps {
   pads: PadConfig[];
   padStates: Map<string, NoteState>;
@@ -46,8 +88,8 @@ export const PadGrid: React.FC<PadGridProps> = React.memo(
         {pads.map((pad) => (
           <PadWrapper
             key={pad.id}
-            config={pad}
-            state={padStates.get(pad.id) || NoteState.IDLE}
+            pad={pad}
+            padStates={padStates}
             onTrigger={onPadTrigger}
             onStop={onPadStop}
           />
