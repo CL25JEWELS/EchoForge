@@ -4,7 +4,7 @@
  * Browse and discover tracks from the community
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { TrackFeed } from '../components/TrackFeed';
 import { LooperApp } from '../../core/LooperApp';
 import { Feed, FeedType } from '../../types/social.types';
@@ -21,11 +21,8 @@ export const SocialScreen: React.FC<SocialScreenProps> = ({ app, className = '' 
 
   const apiService = app.getApiService();
 
-  useEffect(() => {
-    loadFeed();
-  }, [selectedFeedType]);
-
-  const loadFeed = async () => {
+  // ⚡ Bolt: Memoize handlers to prevent unnecessary re-renders of TrackFeed and TrackCards
+  const loadFeed = useCallback(async () => {
     setLoading(true);
     try {
       const feedData = await apiService.getFeed(selectedFeedType, {
@@ -38,54 +35,67 @@ export const SocialScreen: React.FC<SocialScreenProps> = ({ app, className = '' 
     } finally {
       setLoading(false);
     }
-  };
+  }, [apiService, selectedFeedType]);
 
-  const handleTrackPlay = async (trackId: string) => {
-    try {
-      const track = await apiService.getTrack(trackId);
-      const projectFile = await apiService.downloadProjectFile(trackId);
+  useEffect(() => {
+    loadFeed();
+  }, [loadFeed]);
 
-      // Load the project
-      app.getProjectManager().loadProject(projectFile);
+  const handleTrackPlay = useCallback(
+    async (trackId: string) => {
+      try {
+        const track = await apiService.getTrack(trackId);
+        const projectFile = await apiService.downloadProjectFile(trackId);
 
-      console.log('Loaded track:', track.title);
-    } catch (error) {
-      console.error('Failed to load track:', error);
-    }
-  };
+        // Load the project
+        app.getProjectManager().loadProject(projectFile);
 
-  const handleTrackLike = async (trackId: string) => {
-    try {
-      await apiService.likeTrack(trackId);
-      // Refresh feed
-      loadFeed();
-    } catch (error) {
-      console.error('Failed to like track:', error);
-    }
-  };
+        console.log('Loaded track:', track.title);
+      } catch (error) {
+        console.error('Failed to load track:', error);
+      }
+    },
+    [apiService, app]
+  );
 
-  const handleTrackRemix = async (trackId: string) => {
-    try {
-      const track = await apiService.getTrack(trackId);
-      const projectFile = await apiService.downloadProjectFile(trackId);
+  const handleTrackLike = useCallback(
+    async (trackId: string) => {
+      try {
+        await apiService.likeTrack(trackId);
+        // Refresh feed
+        loadFeed();
+      } catch (error) {
+        console.error('Failed to like track:', error);
+      }
+    },
+    [apiService, loadFeed]
+  );
 
-      // Load as new project for remixing
-      const project = projectFile.project;
-      project.id = `remix-${Date.now()}`;
-      project.name = `${project.name} (Remix)`;
+  const handleTrackRemix = useCallback(
+    async (trackId: string) => {
+      try {
+        const track = await apiService.getTrack(trackId);
+        const projectFile = await apiService.downloadProjectFile(trackId);
 
-      app.getProjectManager().loadProject({
-        ...projectFile,
-        project
-      });
+        // Load as new project for remixing
+        const project = projectFile.project;
+        project.id = `remix-${Date.now()}`;
+        project.name = `${project.name} (Remix)`;
 
-      console.log('Remixing track:', track.title);
-    } catch (error) {
-      console.error('Failed to remix track:', error);
-    }
-  };
+        app.getProjectManager().loadProject({
+          ...projectFile,
+          project
+        });
 
-  const handleLoadMore = async () => {
+        console.log('Remixing track:', track.title);
+      } catch (error) {
+        console.error('Failed to remix track:', error);
+      }
+    },
+    [apiService, app]
+  );
+
+  const handleLoadMore = useCallback(async () => {
     if (!feed?.pagination?.hasMore) {
       return;
     }
@@ -111,7 +121,7 @@ export const SocialScreen: React.FC<SocialScreenProps> = ({ app, className = '' 
     } finally {
       setLoading(false);
     }
-  };
+  }, [feed, selectedFeedType, apiService]);
 
   return (
     <div className={`social-screen ${className}`}>
