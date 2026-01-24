@@ -4,7 +4,7 @@
  * Individual pad button for triggering sounds
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { PadConfig, NoteState } from '../../types/audio.types';
 
 export interface PadProps {
@@ -54,10 +54,16 @@ export const Pad: React.FC<PadProps> = React.memo(
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
         disabled={isEmpty}
-        style={{
-          opacity: config.volume,
-          filter: `hue-rotate(${config.pitch * 10}deg)`
-        }}
+        // ⚡ Bolt: Memoize the style object to prevent it from being re-created on every render.
+        // This is a micro-optimization, but for a component that renders in a large grid and
+        // updates frequently, it helps reduce the load on React's diffing algorithm and the browser engine.
+        style={useMemo(
+          () => ({
+            opacity: config.volume,
+            filter: `hue-rotate(${config.pitch * 10}deg)`
+          }),
+          [config.volume, config.pitch]
+        )}
       >
         <div className="pad__content">
           {!isEmpty && (
