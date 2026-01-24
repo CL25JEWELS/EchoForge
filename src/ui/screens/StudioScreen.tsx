@@ -4,7 +4,7 @@
  * Main interface for creating music with pads
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { PadGrid } from '../components/PadGrid';
 import { PlaybackControls } from '../components/PlaybackControls';
 import { SoundBrowser } from '../components/SoundBrowser';
@@ -142,24 +142,34 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
     setSelectedCategory(category);
   }, []);
 
-  const handleSoundSelect = (sound: Sound) => {
-    // Assign sound to the first empty pad or show pad selection UI
-    const emptyPad = pads.find((p) => !p.soundId);
-    if (emptyPad) {
-      handlePadConfigChange(emptyPad.id, { soundId: sound.id });
-      // Preload the sound into the audio engine
-      const soundPackManager = app.getSoundPackManager();
-      const fullSound = soundPackManager.getSound(sound.id);
-      if (fullSound) {
-        audioEngine.loadSound(fullSound).catch((err) => {
-          console.error('Failed to load sound:', err);
-        });
+  // ⚡ Bolt: Memoize handleSoundSelect to provide a stable prop to SoundBrowser.
+  // This helps prevent SoundBrowser from re-rendering unnecessarily.
+  const handleSoundSelect = useCallback(
+    (sound: Sound) => {
+      // Assign sound to the first empty pad or show pad selection UI
+      const emptyPad = pads.find((p) => !p.soundId);
+      if (emptyPad) {
+        handlePadConfigChange(emptyPad.id, { soundId: sound.id });
+        // Preload the sound into the audio engine
+        const soundPackManager = app.getSoundPackManager();
+        const fullSound = soundPackManager.getSound(sound.id);
+        if (fullSound) {
+          audioEngine.loadSound(fullSound).catch((err) => {
+            console.error('Failed to load sound:', err);
+          });
+        }
       }
-    }
-    setShowSoundBrowser(false);
-  };
+      setShowSoundBrowser(false);
+    },
+    [pads, handlePadConfigChange, app, audioEngine]
+  );
 
-  const soundPacks = soundPackManager.getAllSoundPacks();
+  // ⚡ Bolt: Memoize soundPacks to prevent passing a new array reference on every render.
+  // We include showSoundBrowser in dependencies so it refreshes when opened,
+  // but remains stable while open (even if other state like padStates changes).
+  const soundPacks = useMemo(() => {
+    return soundPackManager.getAllSoundPacks();
+  }, [soundPackManager, showSoundBrowser]);
 
   return (
     <div className={`studio-screen ${className}`}>
