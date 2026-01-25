@@ -18,6 +18,8 @@ export const SocialScreen: React.FC<SocialScreenProps> = ({ app, className = '' 
   const [selectedFeedType, setSelectedFeedType] = useState<FeedType>(FeedType.TRENDING);
   const [feed, setFeed] = useState<Feed | null>(null);
   const [loading, setLoading] = useState(false);
+  // ⚡ Bolt: Add loadingMore state to separate pagination loading from initial feed loading
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const apiService = app.getApiService();
 
@@ -90,7 +92,7 @@ export const SocialScreen: React.FC<SocialScreenProps> = ({ app, className = '' 
       return;
     }
 
-    setLoading(true);
+    setLoadingMore(true);
     try {
       const nextPage = (feed.pagination.page || 1) + 1;
       const moreTracks = await apiService.getFeed(selectedFeedType, {
@@ -109,7 +111,7 @@ export const SocialScreen: React.FC<SocialScreenProps> = ({ app, className = '' 
     } catch (error) {
       console.error('Failed to load more tracks:', error);
     } finally {
-      setLoading(false);
+      setLoadingMore(false);
     }
   };
 
@@ -155,6 +157,7 @@ export const SocialScreen: React.FC<SocialScreenProps> = ({ app, className = '' 
             onTrackLike={handleTrackLike}
             onTrackRemix={handleTrackRemix}
             onLoadMore={handleLoadMore}
+            loadingMore={loadingMore}
           />
         ) : (
           <div className="social-screen__empty">No tracks found</div>
