@@ -4,7 +4,7 @@
  * Browse and select sounds from loaded sound packs
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Sound, SoundCategory } from '../../types/audio.types';
 import { SoundPack } from '../../types/soundpack.types';
 
@@ -25,19 +25,25 @@ export const SoundBrowser: React.FC<SoundBrowserProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Get all sounds from all packs
-  const allSounds = soundPacks.flatMap((pack) => pack.sounds);
+  // ⚡ Bolt: Memoize allSounds to prevent expensive flatMap on every render
+  const allSounds = useMemo(() => {
+    return soundPacks.flatMap((pack) => pack.sounds);
+  }, [soundPacks]);
 
-  // Filter sounds
-  const filteredSounds = allSounds.filter((sound) => {
-    const matchesCategory = !selectedCategory || sound.category === selectedCategory;
-    const matchesSearch =
-      !searchQuery || sound.name.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  // ⚡ Bolt: Memoize categories to prevent Set creation and iteration on every render
+  const categories = useMemo(() => {
+    return Array.from(new Set(allSounds.map((s) => s.category)));
+  }, [allSounds]);
 
-  // Get unique categories
-  const categories = Array.from(new Set(allSounds.map((s) => s.category)));
+  // ⚡ Bolt: Memoize filteredSounds to only re-run when search/filter changes
+  const filteredSounds = useMemo(() => {
+    return allSounds.filter((sound) => {
+      const matchesCategory = !selectedCategory || sound.category === selectedCategory;
+      const matchesSearch =
+        !searchQuery || sound.name.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesCategory && matchesSearch;
+    });
+  }, [allSounds, selectedCategory, searchQuery]);
 
   return (
     <div className={`sound-browser ${className}`}>
