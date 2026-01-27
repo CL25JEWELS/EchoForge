@@ -4,7 +4,7 @@
  * Browse and discover tracks from the community
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { TrackFeed } from '../components/TrackFeed';
 import { LooperApp } from '../../core/LooperApp';
 import { Feed, FeedType } from '../../types/social.types';
@@ -18,14 +18,12 @@ export const SocialScreen: React.FC<SocialScreenProps> = ({ app, className = '' 
   const [selectedFeedType, setSelectedFeedType] = useState<FeedType>(FeedType.TRENDING);
   const [feed, setFeed] = useState<Feed | null>(null);
   const [loading, setLoading] = useState(false);
+  // ⚡ Bolt: Separate loading state for pagination to prevent list unmount/remount
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const apiService = app.getApiService();
 
-  useEffect(() => {
-    loadFeed();
-  }, [selectedFeedType]);
-
-  const loadFeed = async () => {
+  const loadFeed = useCallback(async () => {
     setLoading(true);
     try {
       const feedData = await apiService.getFeed(selectedFeedType, {
@@ -38,59 +36,73 @@ export const SocialScreen: React.FC<SocialScreenProps> = ({ app, className = '' 
     } finally {
       setLoading(false);
     }
-  };
+  }, [apiService, selectedFeedType]);
 
-  const handleTrackPlay = async (trackId: string) => {
-    try {
-      const track = await apiService.getTrack(trackId);
-      const projectFile = await apiService.downloadProjectFile(trackId);
+  useEffect(() => {
+    loadFeed();
+  }, [loadFeed]);
 
-      // Load the project
-      app.getProjectManager().loadProject(projectFile);
+  // ⚡ Bolt: Memoize handlers to prevent unnecessary re-renders of TrackFeed and TrackCards
+  const handleTrackPlay = useCallback(
+    async (trackId: string) => {
+      try {
+        const track = await apiService.getTrack(trackId);
+        const projectFile = await apiService.downloadProjectFile(trackId);
 
-      console.log('Loaded track:', track.title);
-    } catch (error) {
-      console.error('Failed to load track:', error);
-    }
-  };
+        // Load the project
+        app.getProjectManager().loadProject(projectFile);
 
-  const handleTrackLike = async (trackId: string) => {
-    try {
-      await apiService.likeTrack(trackId);
-      // Refresh feed
-      loadFeed();
-    } catch (error) {
-      console.error('Failed to like track:', error);
-    }
-  };
+        console.log('Loaded track:', track.title);
+      } catch (error) {
+        console.error('Failed to load track:', error);
+      }
+    },
+    [apiService, app]
+  );
 
-  const handleTrackRemix = async (trackId: string) => {
-    try {
-      const track = await apiService.getTrack(trackId);
-      const projectFile = await apiService.downloadProjectFile(trackId);
+  const handleTrackLike = useCallback(
+    async (trackId: string) => {
+      try {
+        await apiService.likeTrack(trackId);
+        // Refresh feed
+        loadFeed();
+      } catch (error) {
+        console.error('Failed to like track:', error);
+      }
+    },
+    [apiService, loadFeed]
+  );
 
-      // Load as new project for remixing
-      const project = projectFile.project;
-      project.id = `remix-${Date.now()}`;
-      project.name = `${project.name} (Remix)`;
+  const handleTrackRemix = useCallback(
+    async (trackId: string) => {
+      try {
+        const track = await apiService.getTrack(trackId);
+        const projectFile = await apiService.downloadProjectFile(trackId);
 
-      app.getProjectManager().loadProject({
-        ...projectFile,
-        project
-      });
+        // Load as new project for remixing
+        const project = projectFile.project;
+        project.id = `remix-${Date.now()}`;
+        project.name = `${project.name} (Remix)`;
 
-      console.log('Remixing track:', track.title);
-    } catch (error) {
-      console.error('Failed to remix track:', error);
-    }
-  };
+        app.getProjectManager().loadProject({
+          ...projectFile,
+          project
+        });
 
-  const handleLoadMore = async () => {
-    if (!feed?.pagination?.hasMore) {
+        console.log('Remixing track:', track.title);
+      } catch (error) {
+        console.error('Failed to remix track:', error);
+      }
+    },
+    [apiService, app]
+  );
+
+  const handleLoadMore = useCallback(async () => {
+    if (!feed?.pagination?.hasMore || loadingMore) {
       return;
     }
 
-    setLoading(true);
+    setLoadingMore(true);
     try {
       const nextPage = (feed.pagination.page || 1) + 1;
       const moreTracks = await apiService.getFeed(selectedFeedType, {
@@ -99,19 +111,22 @@ export const SocialScreen: React.FC<SocialScreenProps> = ({ app, className = '' 
       });
 
       // Append new tracks to existing feed
-      if (feed && moreTracks) {
-        setFeed({
-          ...feed,
-          tracks: [...feed.tracks, ...moreTracks.tracks],
-          pagination: moreTracks.pagination
+      if (moreTracks) {
+        setFeed((currentFeed) => {
+          if (!currentFeed) return null;
+          return {
+            ...currentFeed,
+            tracks: [...currentFeed.tracks, ...moreTracks.tracks],
+            pagination: moreTracks.pagination
+          };
         });
       }
     } catch (error) {
       console.error('Failed to load more tracks:', error);
     } finally {
-      setLoading(false);
+      setLoadingMore(false);
     }
-  };
+  }, [feed, loadingMore, apiService, selectedFeedType]);
 
   return (
     <div className={`social-screen ${className}`}>
@@ -149,13 +164,16 @@ export const SocialScreen: React.FC<SocialScreenProps> = ({ app, className = '' 
         {loading ? (
           <div className="social-screen__loading">Loading...</div>
         ) : feed ? (
-          <TrackFeed
-            feed={feed}
-            onTrackPlay={handleTrackPlay}
-            onTrackLike={handleTrackLike}
-            onTrackRemix={handleTrackRemix}
-            onLoadMore={handleLoadMore}
-          />
+          <>
+            <TrackFeed
+              feed={feed}
+              onTrackPlay={handleTrackPlay}
+              onTrackLike={handleTrackLike}
+              onTrackRemix={handleTrackRemix}
+              onLoadMore={handleLoadMore}
+            />
+            {loadingMore && <div className="social-screen__loading-more">Loading more...</div>}
+          </>
         ) : (
           <div className="social-screen__empty">No tracks found</div>
         )}
