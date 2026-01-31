@@ -116,48 +116,60 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
     [projectManager]
   );
 
-  const handlePlay = () => {
+  // ⚡ Bolt: Memoize playback handlers to prevent re-renders of PlaybackControls.
+  const handlePlay = useCallback(() => {
     audioEngine.startClock();
     setIsPlaying(true);
-  };
+  }, [audioEngine]);
 
-  const handleStop = () => {
+  const handleStop = useCallback(() => {
     audioEngine.stopClock();
     audioEngine.reset();
     setIsPlaying(false);
-  };
+  }, [audioEngine]);
 
-  const handleTempoChange = (newTempo: Partial<TempoConfig>) => {
-    const updatedTempo = { ...tempo, ...newTempo };
-    setTempo(updatedTempo);
-    projectManager.updateTempo(updatedTempo);
-  };
+  const handleTempoChange = useCallback(
+    (newTempo: Partial<TempoConfig>) => {
+      setTempo((prevTempo) => {
+        const updatedTempo = { ...prevTempo, ...newTempo };
+        projectManager.updateTempo(updatedTempo);
+        return updatedTempo;
+      });
+    },
+    [projectManager]
+  );
 
-  const handleVolumeChange = (volume: number) => {
-    setMasterVolume(volume);
-    audioEngine.setMasterVolume(volume);
-  };
+  const handleVolumeChange = useCallback(
+    (volume: number) => {
+      setMasterVolume(volume);
+      audioEngine.setMasterVolume(volume);
+    },
+    [audioEngine]
+  );
 
   const handleCategoryChange = useCallback((category: SoundCategory | undefined) => {
     setSelectedCategory(category);
   }, []);
 
-  const handleSoundSelect = (sound: Sound) => {
-    // Assign sound to the first empty pad or show pad selection UI
-    const emptyPad = pads.find((p) => !p.soundId);
-    if (emptyPad) {
-      handlePadConfigChange(emptyPad.id, { soundId: sound.id });
-      // Preload the sound into the audio engine
-      const soundPackManager = app.getSoundPackManager();
-      const fullSound = soundPackManager.getSound(sound.id);
-      if (fullSound) {
-        audioEngine.loadSound(fullSound).catch((err) => {
-          console.error('Failed to load sound:', err);
-        });
+  const handleSoundSelect = useCallback(
+    (sound: Sound) => {
+      // Assign sound to the first empty pad or show pad selection UI
+      const emptyPad = pads.find((p) => !p.soundId);
+      if (emptyPad) {
+        handlePadConfigChange(emptyPad.id, { soundId: sound.id });
+        // Preload the sound into the audio engine
+        const soundPackManager = app.getSoundPackManager();
+        const fullSound = soundPackManager.getSound(sound.id);
+        if (fullSound) {
+          audioEngine.loadSound(fullSound).catch((err) => {
+            console.error('Failed to load sound:', err);
+          });
+        }
       }
-    }
-    setShowSoundBrowser(false);
-  };
+      setShowSoundBrowser(false);
+    },
+    [pads, handlePadConfigChange, app, audioEngine]
+  );
 
   const soundPacks = soundPackManager.getAllSoundPacks();
 
