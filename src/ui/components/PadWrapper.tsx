@@ -18,11 +18,18 @@ type PadWrapperProps = PadProps;
  * re-renders. It performs a shallow comparison of the config object
  * and a direct comparison of the pad's state.
  *
+ * ⚡ Bolt: We intentionally exclude audio-only properties (pan, effects, filters)
+ * from this comparison. The visual Pad component does not render these values,
+ * so we skip re-renders when they change.
+ *
  * @param prevProps - The previous props.
  * @param nextProps - The next props.
  * @returns True if the props are equal, false otherwise.
  */
-const areEqual = (prevProps: PadWrapperProps, nextProps: PadWrapperProps): boolean => {
+export const arePadPropsEqual = (
+  prevProps: PadWrapperProps,
+  nextProps: PadWrapperProps
+): boolean => {
   return (
     prevProps.state === nextProps.state &&
     prevProps.config.id === nextProps.config.id &&
@@ -30,10 +37,6 @@ const areEqual = (prevProps: PadWrapperProps, nextProps: PadWrapperProps): boole
     prevProps.config.volume === nextProps.config.volume &&
     prevProps.config.pitch === nextProps.config.pitch &&
     prevProps.config.playbackMode === nextProps.config.playbackMode &&
-    prevProps.config.pan === nextProps.config.pan &&
-    prevProps.config.filterFrequency === nextProps.config.filterFrequency &&
-    prevProps.config.filterResonance === nextProps.config.filterResonance &&
-    prevProps.config.effects === nextProps.config.effects &&
     prevProps.onTrigger === nextProps.onTrigger &&
     prevProps.onStop === nextProps.onStop
   );
@@ -42,6 +45,6 @@ const areEqual = (prevProps: PadWrapperProps, nextProps: PadWrapperProps): boole
 // Memoized PadWrapper component
 export const PadWrapper = React.memo<PadWrapperProps>(({ config, state, onTrigger, onStop }) => {
   return <Pad config={config} state={state} onTrigger={onTrigger} onStop={onStop} />;
-}, areEqual);
+}, arePadPropsEqual);
 
 PadWrapper.displayName = 'PadWrapper';
