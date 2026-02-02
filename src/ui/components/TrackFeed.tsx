@@ -18,58 +18,63 @@ export interface TrackFeedProps {
   className?: string;
 }
 
-export const TrackFeed: React.FC<TrackFeedProps> = ({
-  feed,
-  onTrackPlay,
-  onTrackLike,
-  onTrackRemix,
-  onUserClick,
-  onLoadMore,
-  className = ''
-}) => {
-  const getFeedTitle = (type: FeedType): string => {
-    switch (type) {
-      case FeedType.TRENDING:
-        return '🔥 Trending';
-      case FeedType.NEW:
-        return '✨ New Releases';
-      case FeedType.RECOMMENDED:
-        return '💡 Recommended';
-      case FeedType.FOLLOWING:
-        return '👥 Following';
-      case FeedType.REMIXES:
-        return '🔁 Remixes';
-      default:
-        return 'Tracks';
-    }
-  };
+// ⚡ Bolt: Wrapped in React.memo to prevent unnecessary re-renders when parent updates but props are unchanged
+export const TrackFeed = React.memo(
+  ({
+    feed,
+    onTrackPlay,
+    onTrackLike,
+    onTrackRemix,
+    onUserClick,
+    onLoadMore,
+    className = ''
+  }: TrackFeedProps) => {
+    const getFeedTitle = (type: FeedType): string => {
+      switch (type) {
+        case FeedType.TRENDING:
+          return '🔥 Trending';
+        case FeedType.NEW:
+          return '✨ New Releases';
+        case FeedType.RECOMMENDED:
+          return '💡 Recommended';
+        case FeedType.FOLLOWING:
+          return '👥 Following';
+        case FeedType.REMIXES:
+          return '🔁 Remixes';
+        default:
+          return 'Tracks';
+      }
+    };
 
-  return (
-    <div className={`track-feed ${className}`}>
-      <div className="track-feed__header">
-        <h2>{getFeedTitle(feed.type)}</h2>
-      </div>
+    return (
+      <div className={`track-feed ${className}`}>
+        <div className="track-feed__header">
+          <h2>{getFeedTitle(feed.type)}</h2>
+        </div>
 
-      <div className="track-feed__grid">
-        {/* ⚡ Bolt: Passing callbacks directly to allow TrackCard memoization to work effectively.
+        <div className="track-feed__grid">
+          {/* ⚡ Bolt: Passing callbacks directly to allow TrackCard memoization to work effectively.
             Previously, inline arrow functions caused TrackCard to re-render every time TrackFeed rendered. */}
-        {feed.tracks.map((track) => (
-          <TrackCard
-            key={track.id}
-            track={track}
-            onPlay={onTrackPlay}
-            onLike={onTrackLike}
-            onRemix={onTrackRemix}
-            onUserClick={onUserClick}
-          />
-        ))}
-      </div>
+          {feed.tracks.map((track) => (
+            <TrackCard
+              key={track.id}
+              track={track}
+              onPlay={onTrackPlay}
+              onLike={onTrackLike}
+              onRemix={onTrackRemix}
+              onUserClick={onUserClick}
+            />
+          ))}
+        </div>
 
-      {feed.pagination?.hasMore && onLoadMore && (
-        <button className="track-feed__load-more" onClick={onLoadMore}>
-          Load More
-        </button>
-      )}
-    </div>
-  );
-};
+        {feed.pagination?.hasMore && onLoadMore && (
+          <button className="track-feed__load-more" onClick={onLoadMore}>
+            Load More
+          </button>
+        )}
+      </div>
+    );
+  }
+);
+
+TrackFeed.displayName = 'TrackFeed';
