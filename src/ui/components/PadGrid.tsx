@@ -10,7 +10,7 @@
  * Grid layout of pads for the main interface
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { PadWrapper } from './PadWrapper';
 import { PadConfig, NoteState } from '../../types/audio.types';
 
@@ -29,16 +29,21 @@ export interface PadGridProps {
 // This is a significant performance improvement, especially for large grids or frequent parent updates.
 export const PadGrid: React.FC<PadGridProps> = React.memo(
   ({ pads, padStates, onPadTrigger, onPadStop, columns = 4, className = '' }) => {
+    // ⚡ Bolt: Memoize the style object to prevent it from being recreated on every render.
+    // This avoids unnecessary style recalculations in the browser, which is a common
+    // performance bottleneck. The style only needs to be recalculated when the `columns` prop changes.
+    const gridStyle = useMemo(
+      () => ({
+        display: 'grid',
+        gridTemplateColumns: `repeat(${columns}, 1fr)`,
+        gap: '1rem',
+        padding: '1rem'
+      }),
+      [columns]
+    );
+
     return (
-      <div
-        className={`pad-grid ${className}`}
-        style={{
-          display: 'grid',
-          gridTemplateColumns: `repeat(${columns}, 1fr)`,
-          gap: '1rem',
-          padding: '1rem'
-        }}
-      >
+      <div className={`pad-grid ${className}`} style={gridStyle}>
         {/* ⚡ Bolt: Render PadWrapper instead of Pad directly.
             This leverages the custom memoization in PadWrapper, ensuring that only
             the pads whose state has actually changed will re-render. This is the
