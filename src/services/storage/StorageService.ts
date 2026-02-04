@@ -6,6 +6,7 @@
 
 import { ProjectFile } from '../../types/project.types';
 import { User } from '../../types/social.types';
+import { requireValue } from '../../utils';
 
 // Cloud SDK imports
 import { initializeApp, getApps, getApp } from 'firebase/app';
@@ -53,6 +54,36 @@ export class StorageService {
     this.config = config;
   }
 
+  // ===== Helper Methods =====
+
+  /**
+   * Check if localStorage is available
+   */
+  private isLocalStorageAvailable(): boolean {
+    return typeof localStorage !== 'undefined';
+  }
+
+  /**
+   * Set item in localStorage with null check
+   */
+  private setLocalItem(key: string, data: string): void {
+    if (this.isLocalStorageAvailable()) {
+      localStorage.setItem(key, data);
+    } else {
+      console.warn('[StorageService] localStorage not available');
+    }
+  }
+
+  /**
+   * Get item from localStorage with null check
+   */
+  private getLocalItem(key: string): string | null {
+    if (this.isLocalStorageAvailable()) {
+      return localStorage.getItem(key);
+    }
+    return null;
+  }
+
   // ===== Project Storage =====
 
   /**
@@ -61,15 +92,7 @@ export class StorageService {
   async saveProjectLocal(projectId: string, projectFile: ProjectFile): Promise<void> {
     const key = `${this.storageKey}:project:${projectId}`;
     const data = JSON.stringify(projectFile);
-
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem(key, data);
-    } else {
-      // For Node.js environment or React Native
-      // You'd use AsyncStorage or similar
-      console.warn('[StorageService] localStorage not available');
-    }
-
+    this.setLocalItem(key, data);
     console.log(`[StorageService] Saved project locally: ${projectId}`);
   }
 
@@ -78,15 +101,8 @@ export class StorageService {
    */
   async loadProjectLocal(projectId: string): Promise<ProjectFile | null> {
     const key = `${this.storageKey}:project:${projectId}`;
-
-    if (typeof localStorage !== 'undefined') {
-      const data = localStorage.getItem(key);
-      if (data) {
-        return JSON.parse(data);
-      }
-    }
-
-    return null;
+    const data = this.getLocalItem(key);
+    return data ? JSON.parse(data) : null;
   }
 
   /**
@@ -95,15 +111,17 @@ export class StorageService {
   async listLocalProjects(): Promise<string[]> {
     const projectIds: string[] = [];
 
-    if (typeof localStorage !== 'undefined') {
-      const prefix = `${this.storageKey}:project:`;
+    if (!this.isLocalStorageAvailable()) {
+      return projectIds;
+    }
 
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith(prefix)) {
-          const projectId = key.substring(prefix.length);
-          projectIds.push(projectId);
-        }
+    const prefix = `${this.storageKey}:project:`;
+
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(prefix)) {
+        const projectId = key.substring(prefix.length);
+        projectIds.push(projectId);
       }
     }
 
@@ -145,10 +163,10 @@ export class StorageService {
   }
 
   private async saveToFirebase(projectId: string, data: string): Promise<string> {
-    const credentials = this.config.credentials as FirebaseCredentials;
-    if (!credentials) {
-      throw new Error('Firebase credentials missing');
-    }
+    const credentials = requireValue(
+      this.config.credentials as FirebaseCredentials,
+      'Firebase credentials missing'
+    );
 
     const firebaseConfig = {
       apiKey: credentials.apiKey,
@@ -170,7 +188,7 @@ export class StorageService {
 
   private async saveToSupabase(projectId: string, data: string): Promise<string> {
     const credentials = this.config.credentials as SupabaseCredentials;
-    if (!credentials || !credentials.url || !credentials.key) {
+    if (!credentials?.url || !credentials?.key) {
       throw new Error('Supabase credentials missing');
     }
 
@@ -196,11 +214,10 @@ export class StorageService {
   private async saveToAws(projectId: string, data: string): Promise<string> {
     const credentials = this.config.credentials as AwsCredentials;
     if (
-      !credentials ||
-      !credentials.accessKeyId ||
-      !credentials.secretAccessKey ||
-      !credentials.region ||
-      !credentials.bucketName
+      !credentials?.accessKeyId ||
+      !credentials?.secretAccessKey ||
+      !credentials?.region ||
+      !credentials?.bucketName
     ) {
       throw new Error('AWS credentials missing');
     }
@@ -249,11 +266,7 @@ export class StorageService {
   async saveUserLocal(user: User): Promise<void> {
     const key = `${this.storageKey}:user`;
     const data = JSON.stringify(user);
-
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem(key, data);
-    }
-
+    this.setLocalItem(key, data);
     console.log(`[StorageService] Saved user data locally`);
   }
 
@@ -262,34 +275,29 @@ export class StorageService {
    */
   async loadUserLocal(): Promise<User | null> {
     const key = `${this.storageKey}:user`;
-
-    if (typeof localStorage !== 'undefined') {
-      const data = localStorage.getItem(key);
-      if (data) {
-        return JSON.parse(data);
-      }
-    }
-
-    return null;
+    const data = this.getLocalItem(key);
+    return data ? JSON.parse(data) : null;
   }
 
   /**
    * Clear all local data
    */
   async clearAllLocal(): Promise<void> {
-    if (typeof localStorage !== 'undefined') {
-      const keysToRemove: string[] = [];
-
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith(this.storageKey)) {
-          keysToRemove.push(key);
-        }
-      }
-
-      keysToRemove.forEach((key) => localStorage.removeItem(key));
-      console.log(`[StorageService] Cleared ${keysToRemove.length} local items`);
+    if (!this.isLocalStorageAvailable()) {
+      return;
     }
+
+    const keysToRemove: string[] = [];
+
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(this.storageKey)) {
+        keysToRemove.push(key);
+      }
+    }
+
+    keysToRemove.forEach((key) => localStorage.removeItem(key));
+    console.log(`[StorageService] Cleared ${keysToRemove.length} local items`);
   }
 
   // ===== File Upload/Download =====
