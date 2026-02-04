@@ -4,7 +4,7 @@
  * Main interface for creating music with pads
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { PadGrid } from '../components/PadGrid';
 import { PlaybackControls } from '../components/PlaybackControls';
 import { SoundBrowser } from '../components/SoundBrowser';
@@ -52,9 +52,11 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
   const [showSoundBrowser, setShowSoundBrowser] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<SoundCategory | undefined>();
 
-  const audioEngine = app.getAudioEngine();
-  const projectManager = app.getProjectManager();
-  const soundPackManager = app.getSoundPackManager();
+  // ⚡ Bolt: Stabilize service instances with useMemo.
+  // This ensures stable references for hook dependencies and memoized child components.
+  const audioEngine = useMemo(() => app.getAudioEngine(), [app]);
+  const projectManager = useMemo(() => app.getProjectManager(), [app]);
+  const soundPackManager = useMemo(() => app.getSoundPackManager(), [app]);
 
   useEffect(() => {
     // Load current project or create new one
@@ -116,50 +118,62 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
     [projectManager]
   );
 
-  const handlePlay = () => {
+  // ⚡ Bolt: Memoize transport and mixer callbacks to prevent unnecessary re-renders
+  // of PlaybackControls, which is now wrapped in React.memo.
+  const handlePlay = useCallback(() => {
     audioEngine.startClock();
     setIsPlaying(true);
-  };
+  }, [audioEngine]);
 
-  const handleStop = () => {
+  const handleStop = useCallback(() => {
     audioEngine.stopClock();
     audioEngine.reset();
     setIsPlaying(false);
-  };
+  }, [audioEngine]);
 
-  const handleTempoChange = (newTempo: Partial<TempoConfig>) => {
-    const updatedTempo = { ...tempo, ...newTempo };
-    setTempo(updatedTempo);
-    projectManager.updateTempo(updatedTempo);
-  };
+  const handleTempoChange = useCallback(
+    (newTempo: Partial<TempoConfig>) => {
+      const updatedTempo = { ...tempo, ...newTempo };
+      setTempo(updatedTempo);
+      projectManager.updateTempo(updatedTempo);
+    },
+    [tempo, projectManager]
+  );
 
-  const handleVolumeChange = (volume: number) => {
-    setMasterVolume(volume);
-    audioEngine.setMasterVolume(volume);
-  };
+  const handleVolumeChange = useCallback(
+    (volume: number) => {
+      setMasterVolume(volume);
+      audioEngine.setMasterVolume(volume);
+    },
+    [audioEngine]
+  );
 
   const handleCategoryChange = useCallback((category: SoundCategory | undefined) => {
     setSelectedCategory(category);
   }, []);
 
-  const handleSoundSelect = (sound: Sound) => {
-    // Assign sound to the first empty pad or show pad selection UI
-    const emptyPad = pads.find((p) => !p.soundId);
-    if (emptyPad) {
-      handlePadConfigChange(emptyPad.id, { soundId: sound.id });
-      // Preload the sound into the audio engine
-      const soundPackManager = app.getSoundPackManager();
-      const fullSound = soundPackManager.getSound(sound.id);
-      if (fullSound) {
-        audioEngine.loadSound(fullSound).catch((err) => {
-          console.error('Failed to load sound:', err);
-        });
+  // ⚡ Bolt: Memoize sound selection callback.
+  const handleSoundSelect = useCallback(
+    (sound: Sound) => {
+      // Assign sound to the first empty pad or show pad selection UI
+      const emptyPad = pads.find((p) => !p.soundId);
+      if (emptyPad) {
+        handlePadConfigChange(emptyPad.id, { soundId: sound.id });
+        // Preload the sound into the audio engine
+        const fullSound = soundPackManager.getSound(sound.id);
+        if (fullSound) {
+          audioEngine.loadSound(fullSound).catch((err) => {
+            console.error('Failed to load sound:', err);
+          });
+        }
       }
-    }
-    setShowSoundBrowser(false);
-  };
+      setShowSoundBrowser(false);
+    },
+    [pads, handlePadConfigChange, soundPackManager, audioEngine]
+  );
 
-  const soundPacks = soundPackManager.getAllSoundPacks();
+  // ⚡ Bolt: Memoize soundPacks to prevent unnecessary re-renders of SoundBrowser.
+  const soundPacks = useMemo(() => soundPackManager.getAllSoundPacks(), [soundPackManager]);
 
   return (
     <div className={`studio-screen ${className}`}>
