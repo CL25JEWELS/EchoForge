@@ -7,6 +7,7 @@
 import { Project, ProjectFile, ExportOptions } from '../../types/project.types';
 import { PadConfig, TempoConfig, PlaybackMode } from '../../types/audio.types';
 import { IAudioEngine } from '../audio-engine/IAudioEngine';
+import { ensureExists } from '../../utils';
 
 export class ProjectManager {
   private currentProject: Project | null = null;
@@ -67,8 +68,7 @@ export class ProjectManager {
    * Save the current project to JSON
    */
   saveProject(): ProjectFile | null {
-    if (!this.currentProject) {
-      console.warn('[ProjectManager] No project to save');
+    if (!ensureExists(this.currentProject, 'No project to save', '[ProjectManager]')) {
       return null;
     }
 
@@ -99,7 +99,7 @@ export class ProjectManager {
    * Update project metadata
    */
   updateProjectMetadata(updates: Partial<Project>): void {
-    if (!this.currentProject) {
+    if (!ensureExists(this.currentProject, 'No project to update', '[ProjectManager]')) {
       return;
     }
 
@@ -117,7 +117,7 @@ export class ProjectManager {
    * Update a specific pad configuration
    */
   updatePad(padId: string, config: Partial<PadConfig>): void {
-    if (!this.currentProject) {
+    if (!ensureExists(this.currentProject, 'No project to update pad', '[ProjectManager]')) {
       return;
     }
 
@@ -139,7 +139,7 @@ export class ProjectManager {
    * Update tempo configuration
    */
   updateTempo(tempo: Partial<TempoConfig>): void {
-    if (!this.currentProject) {
+    if (!ensureExists(this.currentProject, 'No project to update tempo', '[ProjectManager]')) {
       return;
     }
 
@@ -239,7 +239,7 @@ export class ProjectManager {
    * Sync project state from audio engine
    */
   private syncFromEngine(): void {
-    if (!this.currentProject) {
+    if (!ensureExists(this.currentProject, 'No project to sync', '[ProjectManager]')) {
       return;
     }
 
@@ -263,7 +263,7 @@ export class ProjectManager {
    * Extract sound pack IDs referenced by the project
    */
   private extractSoundPackReferences(): string[] {
-    if (!this.currentProject) {
+    if (!ensureExists(this.currentProject, 'No project for sound pack references', '[ProjectManager]')) {
       return [];
     }
 

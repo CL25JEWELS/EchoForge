@@ -8,6 +8,7 @@ import React, { useState, useEffect } from 'react';
 import { TrackFeed } from '../components/TrackFeed';
 import { LooperApp } from '../../core/LooperApp';
 import { Feed, FeedType } from '../../types/social.types';
+import { handleAsyncErrorWithFinally, handleAsyncError } from '../../utils';
 
 export interface SocialScreenProps {
   app: LooperApp;
@@ -27,21 +28,21 @@ export const SocialScreen: React.FC<SocialScreenProps> = ({ app, className = '' 
 
   const loadFeed = async () => {
     setLoading(true);
-    try {
-      const feedData = await apiService.getFeed(selectedFeedType, {
+    const feedData = await handleAsyncErrorWithFinally(
+      () => apiService.getFeed(selectedFeedType, {
         page: 1,
         pageSize: 20
-      });
+      }),
+      'Failed to load feed:',
+      () => setLoading(false)
+    );
+    if (feedData) {
       setFeed(feedData);
-    } catch (error) {
-      console.error('Failed to load feed:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleTrackPlay = async (trackId: string) => {
-    try {
+    await handleAsyncError(async () => {
       const track = await apiService.getTrack(trackId);
       const projectFile = await apiService.downloadProjectFile(trackId);
 
@@ -49,23 +50,19 @@ export const SocialScreen: React.FC<SocialScreenProps> = ({ app, className = '' 
       app.getProjectManager().loadProject(projectFile);
 
       console.log('Loaded track:', track.title);
-    } catch (error) {
-      console.error('Failed to load track:', error);
-    }
+    }, 'Failed to load track:');
   };
 
   const handleTrackLike = async (trackId: string) => {
-    try {
+    await handleAsyncError(async () => {
       await apiService.likeTrack(trackId);
       // Refresh feed
       loadFeed();
-    } catch (error) {
-      console.error('Failed to like track:', error);
-    }
+    }, 'Failed to like track:');
   };
 
   const handleTrackRemix = async (trackId: string) => {
-    try {
+    await handleAsyncError(async () => {
       const track = await apiService.getTrack(trackId);
       const projectFile = await apiService.downloadProjectFile(trackId);
 
@@ -80,9 +77,7 @@ export const SocialScreen: React.FC<SocialScreenProps> = ({ app, className = '' 
       });
 
       console.log('Remixing track:', track.title);
-    } catch (error) {
-      console.error('Failed to remix track:', error);
-    }
+    }, 'Failed to remix track:');
   };
 
   const handleLoadMore = async () => {
@@ -91,25 +86,25 @@ export const SocialScreen: React.FC<SocialScreenProps> = ({ app, className = '' 
     }
 
     setLoading(true);
-    try {
-      const nextPage = (feed.pagination.page || 1) + 1;
-      const moreTracks = await apiService.getFeed(selectedFeedType, {
-        page: nextPage,
-        pageSize: 20
-      });
-
-      // Append new tracks to existing feed
-      if (feed && moreTracks) {
-        setFeed({
-          ...feed,
-          tracks: [...feed.tracks, ...moreTracks.tracks],
-          pagination: moreTracks.pagination
+    const moreTracks = await handleAsyncErrorWithFinally(
+      async () => {
+        const nextPage = (feed.pagination.page || 1) + 1;
+        return await apiService.getFeed(selectedFeedType, {
+          page: nextPage,
+          pageSize: 20
         });
-      }
-    } catch (error) {
-      console.error('Failed to load more tracks:', error);
-    } finally {
-      setLoading(false);
+      },
+      'Failed to load more tracks:',
+      () => setLoading(false)
+    );
+
+    // Append new tracks to existing feed
+    if (feed && moreTracks) {
+      setFeed({
+        ...feed,
+        tracks: [...feed.tracks, ...moreTracks.tracks],
+        pagination: moreTracks.pagination
+      });
     }
   };
 

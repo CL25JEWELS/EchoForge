@@ -154,11 +154,13 @@ export class ApiService {
     if (params.remixMetadata)
       formData.append('remixMetadata', JSON.stringify(params.remixMetadata));
 
+    // Get headers but remove Content-Type for FormData (browser sets it automatically with boundary)
+    const headers = this.getHeaders();
+    const { 'Content-Type': _, ...headersWithoutContentType } = headers as Record<string, string>;
+
     const response = await fetch(`${this.config.baseUrl}/tracks`, {
       method: 'POST',
-      headers: {
-        ...(this.config.authToken && { Authorization: `Bearer ${this.config.authToken}` })
-      },
+      headers: headersWithoutContentType,
       body: formData
     });
 

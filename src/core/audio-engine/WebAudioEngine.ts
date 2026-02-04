@@ -16,6 +16,7 @@ import {
   PlaybackMode
 } from '../../types/audio.types';
 import { IAudioEngine } from './IAudioEngine';
+import { requireValue } from '../../utils';
 
 interface WindowWithWebkit extends Window {
   webkitAudioContext?: typeof AudioContext;
@@ -96,9 +97,7 @@ export class WebAudioEngine implements IAudioEngine {
   }
 
   async loadSound(sound: Sound): Promise<void> {
-    if (!this.audioContext) {
-      throw new Error('AudioEngine not initialized');
-    }
+    const audioContext = requireValue(this.audioContext, 'AudioEngine not initialized');
 
     try {
       // Fetch audio data
@@ -106,7 +105,7 @@ export class WebAudioEngine implements IAudioEngine {
       const arrayBuffer = await response.arrayBuffer();
 
       // Decode audio data
-      const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
 
       this.sounds.set(sound.id, {
         sound,
@@ -130,9 +129,8 @@ export class WebAudioEngine implements IAudioEngine {
   }
 
   triggerPad(padId: string, options: PlaybackOptions = {}): void {
-    if (!this.audioContext || !this.masterGainNode) {
-      throw new Error('AudioEngine not initialized');
-    }
+    const audioContext = requireValue(this.audioContext, 'AudioEngine not initialized');
+    const masterGainNode = requireValue(this.masterGainNode, 'AudioEngine not initialized');
 
     const padConfig = this.pads.get(padId);
     if (!padConfig || !padConfig.soundId) {
@@ -147,16 +145,16 @@ export class WebAudioEngine implements IAudioEngine {
     }
 
     // Calculate start time (with optional quantization)
-    let startTime = this.audioContext.currentTime;
+    let startTime = audioContext.currentTime;
     if (options.quantize && this.isClockRunning) {
       startTime = this.getNextQuantizedTime();
     }
 
     // Create audio nodes
-    const source = this.audioContext.createBufferSource();
+    const source = audioContext.createBufferSource();
     source.buffer = loadedSound.buffer;
 
-    const gainNode = this.audioContext.createGain();
+    const gainNode = audioContext.createGain();
     const velocity = options.velocity ?? 1.0;
     gainNode.gain.value = padConfig.volume * velocity;
 
@@ -167,7 +165,7 @@ export class WebAudioEngine implements IAudioEngine {
 
     // Connect nodes
     source.connect(gainNode);
-    gainNode.connect(this.masterGainNode);
+    gainNode.connect(masterGainNode);
 
     // Configure looping
     source.loop = padConfig.playbackMode === PlaybackMode.LOOP || options.loop || false;
