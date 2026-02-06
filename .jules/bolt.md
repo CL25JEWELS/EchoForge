@@ -11,3 +11,7 @@
 ## 2025-05-22 - Audio vs Visual Prop Separation
 **Learning:** Audio applications often have high-frequency state updates (like pan or filter automation) that are processed by the audio engine but not visualized on every component. Passing these props to UI components causes unnecessary re-renders if standard shallow comparison is used.
 **Action:** Use custom `arePropsEqual` functions in `React.memo` to explicitly ignore audio-only properties that don't affect the visual rendering, ensuring the UI only updates when strictly necessary.
+
+## 2024-05-23 - Stable Service References
+**Learning:** Methods in core services that return arrays or objects (e.g., `soundPackManager.getAllSoundPacks()`) should be treated as returning new references on every call.
+**Action:** Use `useMemo` in the consuming React screen/component to stabilize these references and prevent unnecessary re-renders of memoized children.
