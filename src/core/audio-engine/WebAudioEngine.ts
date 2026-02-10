@@ -346,7 +346,7 @@ export class WebAudioEngine implements IAudioEngine {
     return this.audioContext.currentTime + deltaSeconds;
   }
 
-  private getLatencyHintFromMode(mode: string): AudioContextLatencyCategory {
+  private getLatencyHintFromMode(mode: 'low' | 'balanced' | 'high-quality'): AudioContextLatencyCategory {
     switch (mode) {
       case 'low':
         return 'interactive';

@@ -441,26 +441,30 @@ Performance-critical code paths (like pad triggering) use `debugLog.log()` which
 
 ### Environment Configuration
 
-The debug mode is controlled by:
+The debug mode is automatically detected based on your build environment:
 
 ```typescript
-// Development mode
+// For traditional bundlers (Webpack, etc.)
 process.env.NODE_ENV === 'development'
 
-// Or explicit debug flag
-process.env.DEBUG === 'true'
+// For Vite
+import.meta.env.MODE === 'development'
 ```
 
-Set these in your build configuration or `.env` file:
+The debug utility checks both, so it works with any bundler. Set the environment in your build configuration or `.env` file:
 
 ```bash
 # .env.development
 NODE_ENV=development
-DEBUG=true
+
+# For Vite
+MODE=development
 
 # .env.production  
 NODE_ENV=production
-DEBUG=false
+
+# For Vite
+MODE=production
 ```
 
 ---
