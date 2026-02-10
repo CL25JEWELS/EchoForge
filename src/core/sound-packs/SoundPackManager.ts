@@ -7,6 +7,7 @@
 import { SoundPack, SoundPackManifest, SoundPackFilter } from '../../types/soundpack.types';
 import { Sound, SoundCategory } from '../../types/audio.types';
 import { IAudioEngine } from '../audio-engine/IAudioEngine';
+import { debugLog } from '../../utils/debug';
 
 export class SoundPackManager {
   private loadedPacks: Map<string, SoundPack> = new Map();
@@ -71,7 +72,7 @@ export class SoundPackManager {
       throw new Error(`Sound pack ${packId} not loaded`);
     }
 
-    console.log(`[SoundPackManager] Preloading ${pack.sounds.length} sounds from pack: ${pack.name}`);
+    debugLog.log('SoundPackManager', `Preloading ${pack.sounds.length} sounds from pack: ${pack.name}`);
 
     const results = await Promise.allSettled(
       pack.sounds.map((sound) => this.audioEngine.loadSound(sound))

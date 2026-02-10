@@ -81,11 +81,11 @@ export class WebAudioEngine implements IAudioEngine {
     this.masterGainNode.gain.value = 0.8;
 
     // Enhanced debug logging
-    console.log('[AudioEngine] Initialized with configuration:');
-    console.log('[AudioEngine]   Sample rate:', this.audioContext.sampleRate);
-    console.log('[AudioEngine]   Latency hint:', latencyHint);
-    console.log('[AudioEngine]   Base latency:', this.audioContext.baseLatency, 'seconds');
-    console.log('[AudioEngine]   State:', this.audioContext.state);
+    debugLog.log('AudioEngine', 'Initialized with configuration:');
+    debugLog.log('AudioEngine', `  Sample rate: ${this.audioContext.sampleRate}`);
+    debugLog.log('AudioEngine', `  Latency hint: ${latencyHint}`);
+    debugLog.log('AudioEngine', `  Base latency: ${this.audioContext.baseLatency} seconds`);
+    debugLog.log('AudioEngine', `  State: ${this.audioContext.state}`);
   }
 
   async shutdown(): Promise<void> {
@@ -110,7 +110,7 @@ export class WebAudioEngine implements IAudioEngine {
 
     try {
       // Fetch audio data
-      console.log(`[AudioEngine] Fetching sound: ${sound.name} from ${sound.url}`);
+      debugLog.log('AudioEngine', `Fetching sound: ${sound.name} from ${sound.url}`);
       const response = await fetch(sound.url);
       
       if (!response.ok) {
@@ -118,7 +118,7 @@ export class WebAudioEngine implements IAudioEngine {
       }
       
       const arrayBuffer = await response.arrayBuffer();
-      console.log(`[AudioEngine] Fetched ${arrayBuffer.byteLength} bytes for ${sound.name}`);
+      debugLog.log('AudioEngine', `Fetched ${arrayBuffer.byteLength} bytes for ${sound.name}`);
 
       // Decode audio data
       const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
@@ -128,14 +128,14 @@ export class WebAudioEngine implements IAudioEngine {
         buffer: audioBuffer
       });
 
-      console.log(`[AudioEngine] Loaded sound: ${sound.name} (${sound.id})`);
-      console.log(`[AudioEngine]   Duration: ${audioBuffer.duration.toFixed(3)}s`);
-      console.log(`[AudioEngine]   Channels: ${audioBuffer.numberOfChannels}`);
-      console.log(`[AudioEngine]   Sample rate: ${audioBuffer.sampleRate}Hz`);
+      debugLog.log('AudioEngine', `Loaded sound: ${sound.name} (${sound.id})`);
+      debugLog.log('AudioEngine', `  Duration: ${audioBuffer.duration.toFixed(3)}s`);
+      debugLog.log('AudioEngine', `  Channels: ${audioBuffer.numberOfChannels}`);
+      debugLog.log('AudioEngine', `  Sample rate: ${audioBuffer.sampleRate}Hz`);
     } catch (error) {
-      console.error(`[AudioEngine] Failed to load sound: ${sound.id}`);
-      console.error(`[AudioEngine]   URL: ${sound.url}`);
-      console.error(`[AudioEngine]   Error:`, error);
+      debugLog.alwaysError('AudioEngine', `Failed to load sound: ${sound.id}`);
+      debugLog.alwaysError('AudioEngine', `  URL: ${sound.url}`);
+      debugLog.alwaysError('AudioEngine', '  Error:', error);
       throw error;
     }
   }

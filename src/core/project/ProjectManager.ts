@@ -64,9 +64,9 @@ export class ProjectManager {
     this.applyProjectToEngine(project);
 
     console.log(`[ProjectManager] Loaded project: ${project.name}`);
-    console.log(`[ProjectManager]   Tempo: ${project.tempo.bpm} BPM`);
-    console.log(`[ProjectManager]   Pads: ${project.pads.length}`);
-    console.log(`[ProjectManager]   Master volume: ${project.masterVolume}`);
+    debugLog.log('ProjectManager', `  Tempo: ${project.tempo.bpm} BPM`);
+    debugLog.log('ProjectManager', `  Pads: ${project.pads.length}`);
+    debugLog.log('ProjectManager', `  Master volume: ${project.masterVolume}`);
     return project;
   }
 
@@ -91,7 +91,7 @@ export class ProjectManager {
       version: '1.0.0'
     };
 
-    console.log(`[ProjectManager] Saved project: ${this.currentProject.name}`);
+    debugLog.log('ProjectManager', `Saved project: ${this.currentProject.name}`);
     // Only log full project data in debug mode (can be expensive for large projects)
     debugLog.log('ProjectManager', 'Project data:', JSON.stringify(projectFile, null, 2));
     return projectFile;

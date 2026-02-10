@@ -17,6 +17,7 @@ import {
   Share
 } from '../../types/social.types';
 import { ProjectFile } from '../../types/project.types';
+import { debugLog } from '../../utils/debug';
 
 export interface ApiConfig {
   baseUrl: string;
@@ -155,10 +156,10 @@ export class ApiService {
       formData.append('remixMetadata', JSON.stringify(params.remixMetadata));
 
     // Debug logging
-    console.log('[ApiService] Uploading track:', params.title);
-    console.log('[ApiService]   Audio size:', params.audioFile.size, 'bytes');
-    console.log('[ApiService]   JWT attached:', !!this.config.authToken);
-    console.log('[ApiService]   Endpoint:', `${this.config.baseUrl}/tracks`);
+    debugLog.log('ApiService', `Uploading track: ${params.title}`);
+    debugLog.log('ApiService', `  Audio size: ${params.audioFile.size} bytes`);
+    debugLog.log('ApiService', `  JWT attached: ${!!this.config.authToken}`);
+    debugLog.log('ApiService', `  Endpoint: ${this.config.baseUrl}/tracks`);
 
     const response = await fetch(`${this.config.baseUrl}/tracks`, {
       method: 'POST',
@@ -168,22 +169,22 @@ export class ApiService {
       body: formData
     });
 
-    console.log('[ApiService] Upload response status:', response.status, response.statusText);
+    debugLog.log('ApiService', `Upload response status: ${response.status} ${response.statusText}`);
 
     if (!response.ok) {
       let errorMessage = `Failed to upload track: ${response.statusText}`;
       try {
         const errorText = await response.text();
-        console.error('[ApiService] Upload failed with response:', errorText);
+        debugLog.alwaysError('ApiService', 'Upload failed with response:', errorText);
         errorMessage = errorText || errorMessage;
       } catch (e) {
-        console.error('[ApiService] Could not read error response body');
+        debugLog.alwaysError('ApiService', 'Could not read error response body');
       }
       throw new Error(errorMessage);
     }
 
     const result = await response.json();
-    console.log('[ApiService] Upload successful:', result);
+    debugLog.log('ApiService', 'Upload successful:', result);
     return result;
   }
 
