@@ -15,31 +15,31 @@ export const IS_DEBUG_MODE =
  * Debug logger that only logs in development mode
  */
 export const debugLog = {
-  log: (tag: string, message: string, ...args: any[]) => {
+  log: (tag: string, message: string, ...args: unknown[]) => {
     if (IS_DEBUG_MODE) {
       console.log(`[${tag}] ${message}`, ...args);
     }
   },
 
-  error: (tag: string, message: string, ...args: any[]) => {
+  error: (tag: string, message: string, ...args: unknown[]) => {
     if (IS_DEBUG_MODE) {
       console.error(`[${tag}] ${message}`, ...args);
     }
   },
 
-  warn: (tag: string, message: string, ...args: any[]) => {
+  warn: (tag: string, message: string, ...args: unknown[]) => {
     if (IS_DEBUG_MODE) {
       console.warn(`[${tag}] ${message}`, ...args);
     }
   },
 
   // Always log errors regardless of mode
-  alwaysError: (tag: string, message: string, ...args: any[]) => {
+  alwaysError: (tag: string, message: string, ...args: unknown[]) => {
     console.error(`[${tag}] ${message}`, ...args);
   },
 
   // Always log warnings regardless of mode
-  alwaysWarn: (tag: string, message: string, ...args: any[]) => {
+  alwaysWarn: (tag: string, message: string, ...args: unknown[]) => {
     console.warn(`[${tag}] ${message}`, ...args);
   }
 };

@@ -88,10 +88,20 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
         return currentPadStates;
       });
 
-      // Update debug panel metrics
+      // Update debug panel metrics (only if changed to avoid unnecessary renders)
       if (showDebugPanel) {
-        setCurrentTime(audioEngine.getCurrentTime());
-        setCurrentBeat(audioEngine.getCurrentBeat());
+        const newTime = audioEngine.getCurrentTime();
+        const newBeat = audioEngine.getCurrentBeat();
+        
+        setCurrentTime((prevTime) => {
+          // Only update if changed by more than 0.001s to avoid float precision issues
+          return Math.abs(newTime - prevTime) > 0.001 ? newTime : prevTime;
+        });
+        
+        setCurrentBeat((prevBeat) => {
+          // Only update if changed by more than 0.01 beats
+          return Math.abs(newBeat - prevBeat) > 0.01 ? newBeat : prevBeat;
+        });
       }
     }, 50);
 
