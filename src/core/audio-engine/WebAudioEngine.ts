@@ -62,14 +62,16 @@ export class WebAudioEngine implements IAudioEngine {
       throw new Error('Web Audio API is not supported in this environment');
     }
 
+    const latencyHint =
+      engineConfig.latencyMode === 'low'
+        ? 'interactive'
+        : engineConfig.latencyMode === 'high-quality'
+          ? 'playback'
+          : 'balanced';
+
     this.audioContext = new AudioContextClass({
       sampleRate: engineConfig.sampleRate,
-      latencyHint:
-        engineConfig.latencyMode === 'low'
-          ? 'interactive'
-          : engineConfig.latencyMode === 'high-quality'
-            ? 'playback'
-            : 'balanced'
+      latencyHint
     });
 
     // Create master gain node
@@ -77,7 +79,12 @@ export class WebAudioEngine implements IAudioEngine {
     this.masterGainNode.connect(this.audioContext.destination);
     this.masterGainNode.gain.value = 0.8;
 
-    console.log('[AudioEngine] Initialized with sample rate:', this.audioContext.sampleRate);
+    // Enhanced debug logging
+    console.log('[AudioEngine] Initialized with configuration:');
+    console.log('[AudioEngine]   Sample rate:', this.audioContext.sampleRate);
+    console.log('[AudioEngine]   Latency hint:', latencyHint);
+    console.log('[AudioEngine]   Base latency:', this.audioContext.baseLatency, 'seconds');
+    console.log('[AudioEngine]   State:', this.audioContext.state);
   }
 
   async shutdown(): Promise<void> {
@@ -102,8 +109,15 @@ export class WebAudioEngine implements IAudioEngine {
 
     try {
       // Fetch audio data
+      console.log(`[AudioEngine] Fetching sound: ${sound.name} from ${sound.url}`);
       const response = await fetch(sound.url);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
       const arrayBuffer = await response.arrayBuffer();
+      console.log(`[AudioEngine] Fetched ${arrayBuffer.byteLength} bytes for ${sound.name}`);
 
       // Decode audio data
       const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
@@ -114,8 +128,13 @@ export class WebAudioEngine implements IAudioEngine {
       });
 
       console.log(`[AudioEngine] Loaded sound: ${sound.name} (${sound.id})`);
+      console.log(`[AudioEngine]   Duration: ${audioBuffer.duration.toFixed(3)}s`);
+      console.log(`[AudioEngine]   Channels: ${audioBuffer.numberOfChannels}`);
+      console.log(`[AudioEngine]   Sample rate: ${audioBuffer.sampleRate}Hz`);
     } catch (error) {
-      console.error(`[AudioEngine] Failed to load sound: ${sound.id}`, error);
+      console.error(`[AudioEngine] Failed to load sound: ${sound.id}`);
+      console.error(`[AudioEngine]   URL: ${sound.url}`);
+      console.error(`[AudioEngine]   Error:`, error);
       throw error;
     }
   }
@@ -151,6 +170,13 @@ export class WebAudioEngine implements IAudioEngine {
     if (options.quantize && this.isClockRunning) {
       startTime = this.getNextQuantizedTime();
     }
+
+    // Debug logging for pad trigger
+    console.log(`[AudioEngine] Trigger pad: ${padId} at ${startTime.toFixed(3)}s`);
+    console.log(`[AudioEngine]   Current time: ${this.audioContext.currentTime.toFixed(3)}s`);
+    console.log(`[AudioEngine]   BPM: ${this.tempoConfig.bpm}`);
+    console.log(`[AudioEngine]   Quantize grid: ${this.tempoConfig.quantizeGrid}`);
+    console.log(`[AudioEngine]   Quantize enabled: ${options.quantize && this.isClockRunning}`);
 
     // Create audio nodes
     const source = this.audioContext.createBufferSource();

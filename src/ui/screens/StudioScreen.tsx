@@ -8,6 +8,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { PadGrid } from '../components/PadGrid';
 import { PlaybackControls } from '../components/PlaybackControls';
 import { SoundBrowser } from '../components/SoundBrowser';
+import { DebugPanel } from '../components/DebugPanel';
 import { LooperApp } from '../../core/LooperApp';
 import { NoteState, PadConfig, TempoConfig, Sound, SoundCategory } from '../../types/audio.types';
 
@@ -51,6 +52,9 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
   const [masterVolume, setMasterVolume] = useState(0.8);
   const [showSoundBrowser, setShowSoundBrowser] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<SoundCategory | undefined>();
+  const [showDebugPanel, setShowDebugPanel] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [currentBeat, setCurrentBeat] = useState(0);
 
   const audioEngine = app.getAudioEngine();
   const projectManager = app.getProjectManager();
@@ -83,10 +87,19 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
         }
         return currentPadStates;
       });
+
+      // Update debug panel metrics
+      if (showDebugPanel) {
+        const context = (audioEngine as any).audioContext;
+        if (context) {
+          setCurrentTime(context.currentTime);
+        }
+        setCurrentBeat(audioEngine.getCurrentBeat());
+      }
     }, 50);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [showDebugPanel]);
 
   // ⚡ Bolt: Memoize callback functions with useCallback to prevent re-creating them on every render.
   // This ensures that child components like PadGrid don't receive new function props,
@@ -168,6 +181,9 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
         <div className="studio-screen__actions">
           <button onClick={() => setShowSoundBrowser(true)}>🎵 Sounds</button>
           <button onClick={() => projectManager.saveProject()}>💾 Save</button>
+          <button onClick={() => setShowDebugPanel(!showDebugPanel)}>
+            {showDebugPanel ? '🔧 Hide Debug' : '🔧 Show Debug'}
+          </button>
         </div>
       </header>
 
@@ -204,6 +220,19 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
           </aside>
         )}
       </main>
+
+      {showDebugPanel && (
+        <DebugPanel
+          bpm={tempo.bpm}
+          currentTime={currentTime}
+          currentBeat={currentBeat}
+          activePads={Array.from(padStates.entries())
+            .filter(([, state]) => state === NoteState.PLAYING)
+            .map(([padId]) => padId)}
+          metrics={audioEngine.getMetrics()}
+          tempo={tempo}
+        />
+      )}
     </div>
   );
 };

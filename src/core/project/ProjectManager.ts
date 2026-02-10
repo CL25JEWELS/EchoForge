@@ -51,6 +51,8 @@ export class ProjectManager {
    * Load a project from JSON
    */
   loadProject(projectData: ProjectFile): Project {
+    console.log('[ProjectManager] Loading project from data:', JSON.stringify(projectData, null, 2));
+    
     const project = projectData.project;
 
     // Update timestamp
@@ -60,6 +62,9 @@ export class ProjectManager {
     this.applyProjectToEngine(project);
 
     console.log(`[ProjectManager] Loaded project: ${project.name}`);
+    console.log(`[ProjectManager]   Tempo: ${project.tempo.bpm} BPM`);
+    console.log(`[ProjectManager]   Pads: ${project.pads.length}`);
+    console.log(`[ProjectManager]   Master volume: ${project.masterVolume}`);
     return project;
   }
 
@@ -85,6 +90,7 @@ export class ProjectManager {
     };
 
     console.log(`[ProjectManager] Saved project: ${this.currentProject.name}`);
+    console.log('[ProjectManager] Project data:', JSON.stringify(projectFile, null, 2));
     return projectFile;
   }
 

@@ -71,22 +71,35 @@ export class SoundPackManager {
       throw new Error(`Sound pack ${packId} not loaded`);
     }
 
+    console.log(`[SoundPackManager] Preloading ${pack.sounds.length} sounds from pack: ${pack.name}`);
+
     const results = await Promise.allSettled(
       pack.sounds.map((sound) => this.audioEngine.loadSound(sound))
     );
 
-    // Count failures
+    // Count failures and log details
     const failures = results.filter((r) => r.status === 'rejected');
     if (failures.length > 0) {
       console.warn(
         `[SoundPackManager] Failed to load ${failures.length} sounds from pack: ${pack.name}`
       );
-      // In production, could emit event for UI notification
+      failures.forEach((failure, index) => {
+        if (failure.status === 'rejected') {
+          console.error(`[SoundPackManager]   Sound ${index}:`, failure.reason);
+        }
+      });
     }
 
     const successCount = results.length - failures.length;
     console.log(
       `[SoundPackManager] Preloaded ${successCount}/${pack.sounds.length} sounds from pack: ${pack.name}`
+    );
+    
+    // Log loaded sounds for debugging
+    console.log('[SoundPackManager] Loaded sounds:', 
+      Array.from(this.loadedPacks.values()).flatMap(p => 
+        p.sounds.map(s => ({ id: s.id, name: s.name }))
+      )
     );
   }
 

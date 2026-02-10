@@ -23,6 +23,7 @@ export const Pad: React.FC<PadProps> = React.memo(
     const [isPressed, setIsPressed] = useState(false);
 
     const handleMouseDown = () => {
+      console.log('[Pad] Clicked:', config.id);
       setIsPressed(true);
       onTrigger(config.id);
     };

@@ -154,6 +154,12 @@ export class ApiService {
     if (params.remixMetadata)
       formData.append('remixMetadata', JSON.stringify(params.remixMetadata));
 
+    // Debug logging
+    console.log('[ApiService] Uploading track:', params.title);
+    console.log('[ApiService]   Audio size:', params.audioFile.size, 'bytes');
+    console.log('[ApiService]   JWT attached:', !!this.config.authToken);
+    console.log('[ApiService]   Endpoint:', `${this.config.baseUrl}/tracks`);
+
     const response = await fetch(`${this.config.baseUrl}/tracks`, {
       method: 'POST',
       headers: {
@@ -162,11 +168,17 @@ export class ApiService {
       body: formData
     });
 
+    console.log('[ApiService] Upload response status:', response.status, response.statusText);
+
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[ApiService] Upload failed:', errorText);
       throw new Error(`Failed to upload track: ${response.statusText}`);
     }
 
-    return response.json();
+    const result = await response.json();
+    console.log('[ApiService] Upload successful:', result);
+    return result;
   }
 
   async getTrack(trackId: string): Promise<Track> {
