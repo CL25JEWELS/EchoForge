@@ -63,12 +63,7 @@ export class WebAudioEngine implements IAudioEngine {
       throw new Error('Web Audio API is not supported in this environment');
     }
 
-    const latencyHint =
-      engineConfig.latencyMode === 'low'
-        ? 'interactive'
-        : engineConfig.latencyMode === 'high-quality'
-          ? 'playback'
-          : 'balanced';
+    const latencyHint = this.getLatencyHintFromMode(engineConfig.latencyMode);
 
     this.audioContext = new AudioContextClass({
       sampleRate: engineConfig.sampleRate,
@@ -349,6 +344,17 @@ export class WebAudioEngine implements IAudioEngine {
     const deltaSeconds = deltaBeats / beatsPerSecond;
 
     return this.audioContext.currentTime + deltaSeconds;
+  }
+
+  private getLatencyHintFromMode(mode: string): AudioContextLatencyCategory {
+    switch (mode) {
+      case 'low':
+        return 'interactive';
+      case 'high-quality':
+        return 'playback';
+      default:
+        return 'balanced';
+    }
   }
 
   private updateMetrics(): void {

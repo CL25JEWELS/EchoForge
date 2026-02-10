@@ -5,11 +5,16 @@
  */
 
 // Check if we're in development mode
-// This can be set via environment variables or build configuration
+// Works with both traditional bundlers (process.env) and Vite (import.meta.env)
+// Bundlers typically replace process.env.NODE_ENV with the literal value at build time
 export const IS_DEBUG_MODE =
-  typeof process !== 'undefined' &&
-  process.env &&
-  (process.env.NODE_ENV === 'development' || process.env.DEBUG === 'true');
+  (typeof process !== 'undefined' &&
+    process.env &&
+    process.env.NODE_ENV === 'development') ||
+  (typeof import.meta !== 'undefined' &&
+    import.meta.env &&
+    import.meta.env.MODE === 'development') ||
+  false;
 
 /**
  * Debug logger that only logs in development mode

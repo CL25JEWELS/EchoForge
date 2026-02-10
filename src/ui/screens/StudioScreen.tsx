@@ -4,7 +4,7 @@
  * Main interface for creating music with pads
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { PadGrid } from '../components/PadGrid';
 import { PlaybackControls } from '../components/PlaybackControls';
 import { SoundBrowser } from '../components/SoundBrowser';
@@ -56,6 +56,10 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
   const [currentTime, setCurrentTime] = useState(0);
   const [currentBeat, setCurrentBeat] = useState(0);
 
+  // Use refs to track previous values and avoid stale closures
+  const prevTimeRef = useRef(0);
+  const prevBeatRef = useRef(0);
+
   const audioEngine = app.getAudioEngine();
   const projectManager = app.getProjectManager();
   const soundPackManager = app.getSoundPackManager();
@@ -93,15 +97,16 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
         const newTime = audioEngine.getCurrentTime();
         const newBeat = audioEngine.getCurrentBeat();
         
-        setCurrentTime((prevTime) => {
-          // Only update if changed by more than 0.001s to avoid float precision issues
-          return Math.abs(newTime - prevTime) > 0.001 ? newTime : prevTime;
-        });
+        // Only update if changed by more than threshold to avoid float precision issues
+        if (Math.abs(newTime - prevTimeRef.current) > 0.001) {
+          prevTimeRef.current = newTime;
+          setCurrentTime(newTime);
+        }
         
-        setCurrentBeat((prevBeat) => {
-          // Only update if changed by more than 0.01 beats
-          return Math.abs(newBeat - prevBeat) > 0.01 ? newBeat : prevBeat;
-        });
+        if (Math.abs(newBeat - prevBeatRef.current) > 0.01) {
+          prevBeatRef.current = newBeat;
+          setCurrentBeat(newBeat);
+        }
       }
     }, 50);
 
