@@ -285,3 +285,116 @@ Filter console by tag to focus on specific layers.
 You're not building a toy. You're building a **browser DAW + remix social network**.
 
 Debug like a pro. 🎧
+
+---
+
+## 🎯 Quick Reference: Debug Commands
+
+### Enable Debug Panel in UI
+```typescript
+// Click the "🔧 Show Debug" button in Studio Screen
+// Or programmatically:
+setShowDebugPanel(true);
+```
+
+### Console Filtering
+
+Filter the browser console to focus on specific subsystems:
+
+```javascript
+// Show only audio engine logs
+console.filter('[AudioEngine]');
+
+// Show only API logs
+console.filter('[ApiService]');
+
+// Show pad interactions
+console.filter('[Pad]');
+```
+
+### Browser DevTools Network Tab
+
+When debugging API issues:
+
+1. Open DevTools (F12)
+2. Go to Network tab
+3. Filter by "Fetch/XHR"
+4. Look for:
+   - Request headers (especially Authorization)
+   - Request payload
+   - Response status
+   - Response body
+
+### Performance Profiling
+
+To debug audio performance issues:
+
+1. Open Chrome DevTools
+2. Go to Performance tab
+3. Click Record
+4. Trigger pads / play music
+5. Stop recording
+6. Look for:
+   - Long tasks (>50ms)
+   - Layout thrashing
+   - Script execution time
+
+---
+
+## 📝 Development Notes
+
+### Code Style
+
+All debug logs follow this pattern:
+
+```typescript
+console.log('[ComponentName] Action description:', data);
+console.error('[ComponentName] Error description:', error);
+console.warn('[ComponentName] Warning description:', data);
+```
+
+This makes it easy to filter logs by component.
+
+### Performance Considerations
+
+The Debug Panel polls at 50ms intervals. This is acceptable for development but should be disabled in production builds.
+
+### Security Note
+
+Debug logs may contain sensitive information. Always disable verbose logging in production builds. Consider using environment variables:
+
+```typescript
+const DEBUG = process.env.NODE_ENV === 'development';
+
+if (DEBUG) {
+  console.log('[AudioEngine] Debug info:', sensitiveData);
+}
+```
+
+---
+
+## 🚀 Production Checklist
+
+Before deploying to production:
+
+- [ ] Disable debug panel by default
+- [ ] Remove or gate verbose console logging
+- [ ] Test with React StrictMode disabled
+- [ ] Verify AudioContext latency settings
+- [ ] Test on multiple browsers (Chrome, Firefox, Safari)
+- [ ] Test on mobile devices
+- [ ] Profile for memory leaks
+- [ ] Test with real network conditions (throttling)
+
+---
+
+## 📚 Additional Resources
+
+- [Web Audio API Documentation](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API)
+- [Chrome DevTools Guide](https://developer.chrome.com/docs/devtools/)
+- [React DevTools](https://react.dev/learn/react-developer-tools)
+- [Performance Best Practices](https://web.dev/performance/)
+
+---
+
+**Happy Debugging! 🎧**
