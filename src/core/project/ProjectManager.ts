@@ -7,6 +7,7 @@
 import { Project, ProjectFile, ExportOptions } from '../../types/project.types';
 import { PadConfig, TempoConfig, PlaybackMode } from '../../types/audio.types';
 import { IAudioEngine } from '../audio-engine/IAudioEngine';
+import { debugLog } from '../../utils/debug';
 
 export class ProjectManager {
   private currentProject: Project | null = null;
@@ -51,7 +52,8 @@ export class ProjectManager {
    * Load a project from JSON
    */
   loadProject(projectData: ProjectFile): Project {
-    console.log('[ProjectManager] Loading project from data:', JSON.stringify(projectData, null, 2));
+    // Only log full project data in debug mode (can be expensive for large projects)
+    debugLog.log('ProjectManager', 'Loading project from data:', JSON.stringify(projectData, null, 2));
     
     const project = projectData.project;
 
@@ -90,7 +92,8 @@ export class ProjectManager {
     };
 
     console.log(`[ProjectManager] Saved project: ${this.currentProject.name}`);
-    console.log('[ProjectManager] Project data:', JSON.stringify(projectFile, null, 2));
+    // Only log full project data in debug mode (can be expensive for large projects)
+    debugLog.log('ProjectManager', 'Project data:', JSON.stringify(projectFile, null, 2));
     return projectFile;
   }
 

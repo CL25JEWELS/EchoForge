@@ -16,6 +16,7 @@ import {
   PlaybackMode
 } from '../../types/audio.types';
 import { IAudioEngine } from './IAudioEngine';
+import { debugLog } from '../../utils/debug';
 
 interface WindowWithWebkit extends Window {
   webkitAudioContext?: typeof AudioContext;
@@ -171,12 +172,12 @@ export class WebAudioEngine implements IAudioEngine {
       startTime = this.getNextQuantizedTime();
     }
 
-    // Debug logging for pad trigger
-    console.log(`[AudioEngine] Trigger pad: ${padId} at ${startTime.toFixed(3)}s`);
-    console.log(`[AudioEngine]   Current time: ${this.audioContext.currentTime.toFixed(3)}s`);
-    console.log(`[AudioEngine]   BPM: ${this.tempoConfig.bpm}`);
-    console.log(`[AudioEngine]   Quantize grid: ${this.tempoConfig.quantizeGrid}`);
-    console.log(`[AudioEngine]   Quantize enabled: ${options.quantize && this.isClockRunning}`);
+    // Debug logging for pad trigger (hot path - only in debug mode)
+    debugLog.log('AudioEngine', `Trigger pad: ${padId} at ${startTime.toFixed(3)}s`);
+    debugLog.log('AudioEngine', `  Current time: ${this.audioContext.currentTime.toFixed(3)}s`);
+    debugLog.log('AudioEngine', `  BPM: ${this.tempoConfig.bpm}`);
+    debugLog.log('AudioEngine', `  Quantize grid: ${this.tempoConfig.quantizeGrid}`);
+    debugLog.log('AudioEngine', `  Quantize enabled: ${options.quantize && this.isClockRunning}`);
 
     // Create audio nodes
     const source = this.audioContext.createBufferSource();

@@ -297,22 +297,22 @@ Debug like a pro. 🎧
 setShowDebugPanel(true);
 ```
 
-### Console Filtering
+### Browser DevTools Console Filtering
 
-Filter the browser console to focus on specific subsystems using the filter input in DevTools Console:
+Use the built-in filter feature in browser DevTools Console to focus on specific subsystems:
 
 **In Chrome DevTools Console:**
 
-1. Open Console tab
-2. Use the filter input field at the top
-3. Type the tag you want to filter by:
+1. Open Console tab (F12 → Console)
+2. Locate the filter input field at the top of the console
+3. Type the tag you want to filter by
 
-Examples:
+**Examples:**
 - Type `[AudioEngine]` to show only audio engine logs
-- Type `[ApiService]` to show only API logs
+- Type `[ApiService]` to show only API logs  
 - Type `[Pad]` to show pad interactions
 
-**Programmatically filter in your code:**
+**Programmatically control logging in your code:**
 
 ```javascript
 // Use environment variables or flags to control logging
@@ -409,3 +409,58 @@ Before deploying to production:
 ---
 
 **Happy Debugging! 🎧**
+
+---
+
+## 🔒 Production-Safe Debug Logging
+
+The codebase uses an environment-aware debug logging utility (`src/utils/debug.ts`) that automatically gates verbose logs based on the environment:
+
+### Debug Utility API
+
+```typescript
+import { debugLog } from '../utils/debug';
+
+// Only logs in development mode
+debugLog.log('AudioEngine', 'Verbose debug info', data);
+debugLog.error('AudioEngine', 'Debug error', error);
+debugLog.warn('AudioEngine', 'Debug warning', data);
+
+// Always logs regardless of environment (for critical errors)
+debugLog.alwaysError('AudioEngine', 'Critical error', error);
+debugLog.alwaysWarn('AudioEngine', 'Important warning', data);
+```
+
+### Hot Path Considerations
+
+Performance-critical code paths (like pad triggering) use `debugLog.log()` which is automatically disabled in production builds. This prevents:
+
+- Console spam in production
+- Performance overhead from string interpolation
+- Potential memory leaks from excessive logging
+
+### Environment Configuration
+
+The debug mode is controlled by:
+
+```typescript
+// Development mode
+process.env.NODE_ENV === 'development'
+
+// Or explicit debug flag
+process.env.DEBUG === 'true'
+```
+
+Set these in your build configuration or `.env` file:
+
+```bash
+# .env.development
+NODE_ENV=development
+DEBUG=true
+
+# .env.production  
+NODE_ENV=production
+DEBUG=false
+```
+
+---

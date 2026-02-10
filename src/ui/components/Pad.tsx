@@ -6,6 +6,7 @@
 
 import React, { useState } from 'react';
 import { PadConfig, NoteState } from '../../types/audio.types';
+import { debugLog } from '../../utils/debug';
 
 export interface PadProps {
   config: PadConfig;
@@ -23,7 +24,7 @@ export const Pad: React.FC<PadProps> = React.memo(
     const [isPressed, setIsPressed] = useState(false);
 
     const handleMouseDown = () => {
-      console.log('[Pad] Clicked:', config.id);
+      debugLog.log('Pad', `Clicked: ${config.id}`);
       setIsPressed(true);
       onTrigger(config.id);
     };
