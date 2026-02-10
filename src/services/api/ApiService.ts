@@ -17,6 +17,7 @@ import {
   Share
 } from '../../types/social.types';
 import { ProjectFile } from '../../types/project.types';
+import { debugLog } from '../../utils/debug';
 
 export interface ApiConfig {
   baseUrl: string;
@@ -154,6 +155,12 @@ export class ApiService {
     if (params.remixMetadata)
       formData.append('remixMetadata', JSON.stringify(params.remixMetadata));
 
+    // Debug logging
+    debugLog.log('ApiService', `Uploading track: ${params.title}`);
+    debugLog.log('ApiService', `  Audio size: ${params.audioFile.size} bytes`);
+    debugLog.log('ApiService', `  JWT attached: ${!!this.config.authToken}`);
+    debugLog.log('ApiService', `  Endpoint: ${this.config.baseUrl}/tracks`);
+
     const response = await fetch(`${this.config.baseUrl}/tracks`, {
       method: 'POST',
       headers: {
@@ -162,11 +169,23 @@ export class ApiService {
       body: formData
     });
 
+    debugLog.log('ApiService', `Upload response status: ${response.status} ${response.statusText}`);
+
     if (!response.ok) {
-      throw new Error(`Failed to upload track: ${response.statusText}`);
+      let errorMessage = `Failed to upload track: ${response.statusText}`;
+      try {
+        const errorText = await response.text();
+        debugLog.alwaysError('ApiService', 'Upload failed with response:', errorText);
+        errorMessage = errorText || errorMessage;
+      } catch (e) {
+        debugLog.alwaysError('ApiService', 'Could not read error response body');
+      }
+      throw new Error(errorMessage);
     }
 
-    return response.json();
+    const result = await response.json();
+    debugLog.log('ApiService', 'Upload successful:', result);
+    return result;
   }
 
   async getTrack(trackId: string): Promise<Track> {

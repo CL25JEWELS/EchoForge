@@ -7,6 +7,7 @@
 import { Project, ProjectFile, ExportOptions } from '../../types/project.types';
 import { PadConfig, TempoConfig, PlaybackMode } from '../../types/audio.types';
 import { IAudioEngine } from '../audio-engine/IAudioEngine';
+import { debugLog, IS_DEBUG_MODE } from '../../utils/debug';
 
 export class ProjectManager {
   private currentProject: Project | null = null;
@@ -51,6 +52,11 @@ export class ProjectManager {
    * Load a project from JSON
    */
   loadProject(projectData: ProjectFile): Project {
+    // Only stringify in debug mode to avoid expensive operation
+    if (IS_DEBUG_MODE) {
+      debugLog.log('ProjectManager', 'Loading project from data:', JSON.stringify(projectData, null, 2));
+    }
+    
     const project = projectData.project;
 
     // Update timestamp
@@ -60,6 +66,9 @@ export class ProjectManager {
     this.applyProjectToEngine(project);
 
     console.log(`[ProjectManager] Loaded project: ${project.name}`);
+    debugLog.log('ProjectManager', `  Tempo: ${project.tempo.bpm} BPM`);
+    debugLog.log('ProjectManager', `  Pads: ${project.pads.length}`);
+    debugLog.log('ProjectManager', `  Master volume: ${project.masterVolume}`);
     return project;
   }
 
@@ -84,7 +93,11 @@ export class ProjectManager {
       version: '1.0.0'
     };
 
-    console.log(`[ProjectManager] Saved project: ${this.currentProject.name}`);
+    debugLog.log('ProjectManager', `Saved project: ${this.currentProject.name}`);
+    // Only stringify in debug mode to avoid expensive operation
+    if (IS_DEBUG_MODE) {
+      debugLog.log('ProjectManager', 'Project data:', JSON.stringify(projectFile, null, 2));
+    }
     return projectFile;
   }
 

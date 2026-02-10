@@ -7,6 +7,7 @@
 import { SoundPack, SoundPackManifest, SoundPackFilter } from '../../types/soundpack.types';
 import { Sound, SoundCategory } from '../../types/audio.types';
 import { IAudioEngine } from '../audio-engine/IAudioEngine';
+import { debugLog } from '../../utils/debug';
 
 export class SoundPackManager {
   private loadedPacks: Map<string, SoundPack> = new Map();
@@ -71,17 +72,23 @@ export class SoundPackManager {
       throw new Error(`Sound pack ${packId} not loaded`);
     }
 
+    debugLog.log('SoundPackManager', `Preloading ${pack.sounds.length} sounds from pack: ${pack.name}`);
+
     const results = await Promise.allSettled(
       pack.sounds.map((sound) => this.audioEngine.loadSound(sound))
     );
 
-    // Count failures
+    // Count failures and log details
     const failures = results.filter((r) => r.status === 'rejected');
     if (failures.length > 0) {
       console.warn(
         `[SoundPackManager] Failed to load ${failures.length} sounds from pack: ${pack.name}`
       );
-      // In production, could emit event for UI notification
+      failures.forEach((failure, index) => {
+        if (failure.status === 'rejected') {
+          console.error(`[SoundPackManager]   Sound ${index}:`, failure.reason);
+        }
+      });
     }
 
     const successCount = results.length - failures.length;

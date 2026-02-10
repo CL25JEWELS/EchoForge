@@ -16,6 +16,7 @@ import {
   PlaybackMode
 } from '../../types/audio.types';
 import { IAudioEngine } from './IAudioEngine';
+import { debugLog } from '../../utils/debug';
 
 interface WindowWithWebkit extends Window {
   webkitAudioContext?: typeof AudioContext;
@@ -62,14 +63,11 @@ export class WebAudioEngine implements IAudioEngine {
       throw new Error('Web Audio API is not supported in this environment');
     }
 
+    const latencyHint = this.getLatencyHintFromMode(engineConfig.latencyMode);
+
     this.audioContext = new AudioContextClass({
       sampleRate: engineConfig.sampleRate,
-      latencyHint:
-        engineConfig.latencyMode === 'low'
-          ? 'interactive'
-          : engineConfig.latencyMode === 'high-quality'
-            ? 'playback'
-            : 'balanced'
+      latencyHint
     });
 
     // Create master gain node
@@ -77,7 +75,12 @@ export class WebAudioEngine implements IAudioEngine {
     this.masterGainNode.connect(this.audioContext.destination);
     this.masterGainNode.gain.value = 0.8;
 
-    console.log('[AudioEngine] Initialized with sample rate:', this.audioContext.sampleRate);
+    // Enhanced debug logging
+    debugLog.log('AudioEngine', 'Initialized with configuration:');
+    debugLog.log('AudioEngine', `  Sample rate: ${this.audioContext.sampleRate}`);
+    debugLog.log('AudioEngine', `  Latency hint: ${latencyHint}`);
+    debugLog.log('AudioEngine', `  Base latency: ${this.audioContext.baseLatency} seconds`);
+    debugLog.log('AudioEngine', `  State: ${this.audioContext.state}`);
   }
 
   async shutdown(): Promise<void> {
@@ -102,8 +105,15 @@ export class WebAudioEngine implements IAudioEngine {
 
     try {
       // Fetch audio data
+      debugLog.log('AudioEngine', `Fetching sound: ${sound.name} from ${sound.url}`);
       const response = await fetch(sound.url);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
       const arrayBuffer = await response.arrayBuffer();
+      debugLog.log('AudioEngine', `Fetched ${arrayBuffer.byteLength} bytes for ${sound.name}`);
 
       // Decode audio data
       const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
@@ -113,9 +123,14 @@ export class WebAudioEngine implements IAudioEngine {
         buffer: audioBuffer
       });
 
-      console.log(`[AudioEngine] Loaded sound: ${sound.name} (${sound.id})`);
+      debugLog.log('AudioEngine', `Loaded sound: ${sound.name} (${sound.id})`);
+      debugLog.log('AudioEngine', `  Duration: ${audioBuffer.duration.toFixed(3)}s`);
+      debugLog.log('AudioEngine', `  Channels: ${audioBuffer.numberOfChannels}`);
+      debugLog.log('AudioEngine', `  Sample rate: ${audioBuffer.sampleRate}Hz`);
     } catch (error) {
-      console.error(`[AudioEngine] Failed to load sound: ${sound.id}`, error);
+      debugLog.alwaysError('AudioEngine', `Failed to load sound: ${sound.id}`);
+      debugLog.alwaysError('AudioEngine', `  URL: ${sound.url}`);
+      debugLog.alwaysError('AudioEngine', '  Error:', error);
       throw error;
     }
   }
@@ -151,6 +166,13 @@ export class WebAudioEngine implements IAudioEngine {
     if (options.quantize && this.isClockRunning) {
       startTime = this.getNextQuantizedTime();
     }
+
+    // Debug logging for pad trigger (hot path - only in debug mode)
+    debugLog.log('AudioEngine', `Trigger pad: ${padId} at ${startTime.toFixed(3)}s`);
+    debugLog.log('AudioEngine', `  Current time: ${this.audioContext.currentTime.toFixed(3)}s`);
+    debugLog.log('AudioEngine', `  BPM: ${this.tempoConfig.bpm}`);
+    debugLog.log('AudioEngine', `  Quantize grid: ${this.tempoConfig.quantizeGrid}`);
+    debugLog.log('AudioEngine', `  Quantize enabled: ${options.quantize && this.isClockRunning}`);
 
     // Create audio nodes
     const source = this.audioContext.createBufferSource();
@@ -273,6 +295,10 @@ export class WebAudioEngine implements IAudioEngine {
     return elapsed * beatsPerSecond;
   }
 
+  getCurrentTime(): number {
+    return this.audioContext?.currentTime ?? 0;
+  }
+
   getMetrics(): AudioMetrics {
     return { ...this.metrics };
   }
@@ -318,6 +344,17 @@ export class WebAudioEngine implements IAudioEngine {
     const deltaSeconds = deltaBeats / beatsPerSecond;
 
     return this.audioContext.currentTime + deltaSeconds;
+  }
+
+  private getLatencyHintFromMode(mode: 'low' | 'balanced' | 'high-quality'): AudioContextLatencyCategory {
+    switch (mode) {
+      case 'low':
+        return 'interactive';
+      case 'high-quality':
+        return 'playback';
+      default:
+        return 'balanced';
+    }
   }
 
   private updateMetrics(): void {

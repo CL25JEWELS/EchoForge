@@ -92,6 +92,11 @@ export interface IAudioEngine {
   getCurrentBeat(): number;
 
   /**
+   * Get current audio context time in seconds
+   */
+  getCurrentTime(): number;
+
+  /**
    * Get performance metrics
    */
   getMetrics(): AudioMetrics;

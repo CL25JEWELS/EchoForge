@@ -4,10 +4,11 @@
  * Main interface for creating music with pads
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { PadGrid } from '../components/PadGrid';
 import { PlaybackControls } from '../components/PlaybackControls';
 import { SoundBrowser } from '../components/SoundBrowser';
+import { DebugPanel } from '../components/DebugPanel';
 import { LooperApp } from '../../core/LooperApp';
 import { NoteState, PadConfig, TempoConfig, Sound, SoundCategory } from '../../types/audio.types';
 
@@ -51,6 +52,13 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
   const [masterVolume, setMasterVolume] = useState(0.8);
   const [showSoundBrowser, setShowSoundBrowser] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<SoundCategory | undefined>();
+  const [showDebugPanel, setShowDebugPanel] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [currentBeat, setCurrentBeat] = useState(0);
+
+  // Use refs to track previous values and avoid stale closures
+  const prevTimeRef = useRef(0);
+  const prevBeatRef = useRef(0);
 
   const audioEngine = app.getAudioEngine();
   const projectManager = app.getProjectManager();
@@ -83,10 +91,27 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
         }
         return currentPadStates;
       });
+
+      // Update debug panel metrics (only if changed to avoid unnecessary renders)
+      if (showDebugPanel) {
+        const newTime = audioEngine.getCurrentTime();
+        const newBeat = audioEngine.getCurrentBeat();
+        
+        // Only update if changed by more than threshold to avoid float precision issues
+        if (Math.abs(newTime - prevTimeRef.current) > 0.001) {
+          prevTimeRef.current = newTime;
+          setCurrentTime(newTime);
+        }
+        
+        if (Math.abs(newBeat - prevBeatRef.current) > 0.01) {
+          prevBeatRef.current = newBeat;
+          setCurrentBeat(newBeat);
+        }
+      }
     }, 50);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [showDebugPanel, audioEngine]);
 
   // ⚡ Bolt: Memoize callback functions with useCallback to prevent re-creating them on every render.
   // This ensures that child components like PadGrid don't receive new function props,
@@ -168,6 +193,9 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
         <div className="studio-screen__actions">
           <button onClick={() => setShowSoundBrowser(true)}>🎵 Sounds</button>
           <button onClick={() => projectManager.saveProject()}>💾 Save</button>
+          <button onClick={() => setShowDebugPanel(!showDebugPanel)}>
+            {showDebugPanel ? '🔧 Hide Debug' : '🔧 Show Debug'}
+          </button>
         </div>
       </header>
 
@@ -204,6 +232,19 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
           </aside>
         )}
       </main>
+
+      {showDebugPanel && (
+        <DebugPanel
+          bpm={tempo.bpm}
+          currentTime={currentTime}
+          currentBeat={currentBeat}
+          activePads={Array.from(padStates.entries())
+            .filter(([, state]) => state === NoteState.PLAYING)
+            .map(([padId]) => padId)}
+          metrics={audioEngine.getMetrics()}
+          tempo={tempo}
+        />
+      )}
     </div>
   );
 };
