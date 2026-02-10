@@ -90,10 +90,7 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
 
       // Update debug panel metrics
       if (showDebugPanel) {
-        const context = (audioEngine as any).audioContext;
-        if (context) {
-          setCurrentTime(context.currentTime);
-        }
+        setCurrentTime(audioEngine.getCurrentTime());
         setCurrentBeat(audioEngine.getCurrentBeat());
       }
     }, 50);

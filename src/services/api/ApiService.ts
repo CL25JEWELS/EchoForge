@@ -171,9 +171,15 @@ export class ApiService {
     console.log('[ApiService] Upload response status:', response.status, response.statusText);
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('[ApiService] Upload failed:', errorText);
-      throw new Error(`Failed to upload track: ${response.statusText}`);
+      let errorMessage = `Failed to upload track: ${response.statusText}`;
+      try {
+        const errorText = await response.text();
+        console.error('[ApiService] Upload failed with response:', errorText);
+        errorMessage = errorText || errorMessage;
+      } catch (e) {
+        console.error('[ApiService] Could not read error response body');
+      }
+      throw new Error(errorMessage);
     }
 
     const result = await response.json();

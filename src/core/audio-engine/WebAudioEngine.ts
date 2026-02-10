@@ -299,6 +299,10 @@ export class WebAudioEngine implements IAudioEngine {
     return elapsed * beatsPerSecond;
   }
 
+  getCurrentTime(): number {
+    return this.audioContext?.currentTime ?? 0;
+  }
+
   getMetrics(): AudioMetrics {
     return { ...this.metrics };
   }
