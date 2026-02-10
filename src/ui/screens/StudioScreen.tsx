@@ -99,7 +99,7 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
     }, 50);
 
     return () => clearInterval(interval);
-  }, [showDebugPanel]);
+  }, [showDebugPanel, audioEngine]);
 
   // ⚡ Bolt: Memoize callback functions with useCallback to prevent re-creating them on every render.
   // This ensures that child components like PadGrid don't receive new function props,

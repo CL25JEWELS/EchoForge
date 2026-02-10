@@ -94,13 +94,6 @@ export class SoundPackManager {
     console.log(
       `[SoundPackManager] Preloaded ${successCount}/${pack.sounds.length} sounds from pack: ${pack.name}`
     );
-    
-    // Log loaded sounds for debugging
-    console.log('[SoundPackManager] Loaded sounds:', 
-      Array.from(this.loadedPacks.values()).flatMap(p => 
-        p.sounds.map(s => ({ id: s.id, name: s.name }))
-      )
-    );
   }
 
   /**

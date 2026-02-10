@@ -299,17 +299,28 @@ setShowDebugPanel(true);
 
 ### Console Filtering
 
-Filter the browser console to focus on specific subsystems:
+Filter the browser console to focus on specific subsystems using the filter input in DevTools Console:
+
+**In Chrome DevTools Console:**
+
+1. Open Console tab
+2. Use the filter input field at the top
+3. Type the tag you want to filter by:
+
+Examples:
+- Type `[AudioEngine]` to show only audio engine logs
+- Type `[ApiService]` to show only API logs
+- Type `[Pad]` to show pad interactions
+
+**Programmatically filter in your code:**
 
 ```javascript
-// Show only audio engine logs
-console.filter('[AudioEngine]');
+// Use environment variables or flags to control logging
+const DEBUG_AUDIO = true;
 
-// Show only API logs
-console.filter('[ApiService]');
-
-// Show pad interactions
-console.filter('[Pad]');
+if (DEBUG_AUDIO) {
+  console.log('[AudioEngine]', 'Debug info');
+}
 ```
 
 ### Browser DevTools Network Tab
