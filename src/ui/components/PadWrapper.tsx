@@ -29,6 +29,7 @@ type PadWrapperProps = PadProps;
 export const arePropsEqual = (prevProps: PadWrapperProps, nextProps: PadWrapperProps): boolean => {
   return (
     prevProps.state === nextProps.state &&
+    prevProps.loadState === nextProps.loadState &&
     prevProps.config.id === nextProps.config.id &&
     prevProps.config.soundId === nextProps.config.soundId &&
     prevProps.config.volume === nextProps.config.volume &&
@@ -45,8 +46,19 @@ export const arePropsEqual = (prevProps: PadWrapperProps, nextProps: PadWrapperP
 };
 
 // Memoized PadWrapper component
-export const PadWrapper = React.memo<PadWrapperProps>(({ config, state, onTrigger, onStop }) => {
-  return <Pad config={config} state={state} onTrigger={onTrigger} onStop={onStop} />;
-}, arePropsEqual);
+export const PadWrapper = React.memo<PadWrapperProps>(
+  ({ config, state, loadState, onTrigger, onStop }) => {
+    return (
+      <Pad
+        config={config}
+        state={state}
+        loadState={loadState}
+        onTrigger={onTrigger}
+        onStop={onStop}
+      />
+    );
+  },
+  arePropsEqual
+);
 
 PadWrapper.displayName = 'PadWrapper';
