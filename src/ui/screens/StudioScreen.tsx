@@ -9,7 +9,15 @@ import { PadGrid } from '../components/PadGrid';
 import { PlaybackControls } from '../components/PlaybackControls';
 import { SoundBrowser } from '../components/SoundBrowser';
 import { LooperApp } from '../../core/LooperApp';
-import { NoteState, PadConfig, TempoConfig, Sound, SoundCategory } from '../../types/audio.types';
+import {
+  NoteState,
+  PadConfig,
+  TempoConfig,
+  Sound,
+  SoundCategory,
+  AssetLoadState
+} from '../../types/audio.types';
+import { AudioAssetManager } from '../../services/audio/AudioAssetManager';
 
 /**
  * Compares two maps of pad states to see if they are equal.
@@ -34,6 +42,29 @@ const arePadStateMapsEqual = (
   return true;
 };
 
+/**
+ * Compares two maps of asset load states to see if they are equal.
+ * @param map1 The first map
+ * @param map2 The second map
+ * @returns True if the maps are equal, false otherwise
+ */
+const areLoadStateMapsEqual = (
+  map1: Map<string, AssetLoadState>,
+  map2: Map<string, AssetLoadState>
+): boolean => {
+  if (map1.size !== map2.size) {
+    return false;
+  }
+
+  for (const [key, value] of map1) {
+    if (map2.get(key) !== value) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
 export interface StudioScreenProps {
   app: LooperApp;
   className?: string;
@@ -42,6 +73,7 @@ export interface StudioScreenProps {
 export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' }) => {
   const [pads, setPads] = useState<PadConfig[]>([]);
   const [padStates, setPadStates] = useState<Map<string, NoteState>>(new Map());
+  const [padLoadStates, setPadLoadStates] = useState<Map<string, AssetLoadState>>(new Map());
   const [isPlaying, setIsPlaying] = useState(false);
   const [tempo, setTempo] = useState<TempoConfig>({
     bpm: 120,
@@ -55,6 +87,7 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
   const audioEngine = app.getAudioEngine();
   const projectManager = app.getProjectManager();
   const soundPackManager = app.getSoundPackManager();
+  const assetManager = AudioAssetManager.getInstance();
 
   useEffect(() => {
     // Load current project or create new one
@@ -67,11 +100,18 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
     setTempo(project.tempo);
     setMasterVolume(project.masterVolume);
 
-    // Update pad states periodically
+    // Update pad states and load states periodically
     const interval = setInterval(() => {
       const newStates = new Map<string, NoteState>();
+      const newLoadStates = new Map<string, AssetLoadState>();
+
       project!.pads.forEach((pad) => {
         newStates.set(pad.id, audioEngine.getPadState(pad.id));
+
+        // Get load state for the sound if assigned
+        if (pad.soundId) {
+          newLoadStates.set(pad.soundId, assetManager.getLoadState(pad.soundId));
+        }
       });
 
       // ⚡ Bolt: To make React.memo effective, we must avoid creating new object references
@@ -82,6 +122,14 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
           return newStates;
         }
         return currentPadStates;
+      });
+
+      // Update load states similarly
+      setPadLoadStates((currentLoadStates) => {
+        if (!areLoadStateMapsEqual(currentLoadStates, newLoadStates)) {
+          return newLoadStates;
+        }
+        return currentLoadStates;
       });
     }, 50);
 
@@ -186,6 +234,7 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
           <PadGrid
             pads={pads}
             padStates={padStates}
+            padLoadStates={padLoadStates}
             onPadTrigger={handlePadTrigger}
             onPadStop={handlePadStop}
             onPadConfigChange={handlePadConfigChange}

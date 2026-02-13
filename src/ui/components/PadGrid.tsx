@@ -12,11 +12,12 @@
 
 import React from 'react';
 import { PadWrapper } from './PadWrapper';
-import { PadConfig, NoteState } from '../../types/audio.types';
+import { PadConfig, NoteState, AssetLoadState } from '../../types/audio.types';
 
 export interface PadGridProps {
   pads: PadConfig[];
   padStates: Map<string, NoteState>;
+  padLoadStates?: Map<string, AssetLoadState>;
   onPadTrigger: (padId: string) => void;
   onPadStop: (padId: string) => void;
   onPadConfigChange?: (padId: string, config: Partial<PadConfig>) => void;
@@ -28,7 +29,7 @@ export interface PadGridProps {
 // When the parent component re-renders, PadGrid will only re-render if its props have changed.
 // This is a significant performance improvement, especially for large grids or frequent parent updates.
 export const PadGrid: React.FC<PadGridProps> = React.memo(
-  ({ pads, padStates, onPadTrigger, onPadStop, columns = 4, className = '' }) => {
+  ({ pads, padStates, padLoadStates, onPadTrigger, onPadStop, columns = 4, className = '' }) => {
     return (
       <div
         className={`pad-grid ${className}`}
@@ -48,6 +49,7 @@ export const PadGrid: React.FC<PadGridProps> = React.memo(
             key={pad.id}
             config={pad}
             state={padStates.get(pad.id) || NoteState.IDLE}
+            loadState={pad.soundId ? padLoadStates?.get(pad.soundId) : undefined}
             onTrigger={onPadTrigger}
             onStop={onPadStop}
           />

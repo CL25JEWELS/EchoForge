@@ -16,6 +16,8 @@ import {
   PlaybackMode
 } from '../../types/audio.types';
 import { IAudioEngine } from './IAudioEngine';
+import { AudioAssetManager } from '../../services/audio/AudioAssetManager';
+import { AudioContextResilience } from '../../services/audio/AudioContextResilience';
 
 interface WindowWithWebkit extends Window {
   webkitAudioContext?: typeof AudioContext;
@@ -40,6 +42,8 @@ export class WebAudioEngine implements IAudioEngine {
   private sounds: Map<string, LoadedSound> = new Map();
   private pads: Map<string, PadConfig> = new Map();
   private activeVoices: Map<string, ActiveVoice[]> = new Map();
+  private assetManager: AudioAssetManager;
+  private resilience: AudioContextResilience;
   private tempoConfig: TempoConfig = {
     bpm: 120,
     timeSignature: { numerator: 4, denominator: 4 },
@@ -53,6 +57,18 @@ export class WebAudioEngine implements IAudioEngine {
     latency: 0,
     dropouts: 0
   };
+
+  constructor() {
+    this.assetManager = AudioAssetManager.getInstance();
+    this.resilience = new AudioContextResilience({
+      onDiagnostics: (diagnostics) => {
+        console.error('[AudioEngine] AudioContext diagnostics:', diagnostics);
+      },
+      onFallback: () => {
+        console.warn('[AudioEngine] Falling back to degraded mode');
+      }
+    });
+  }
 
   async initialize(engineConfig: AudioEngineConfig): Promise<void> {
     // Create audio context
@@ -72,12 +88,26 @@ export class WebAudioEngine implements IAudioEngine {
             : 'balanced'
     });
 
+    // Register audio context with asset manager
+    this.assetManager.setAudioContext(this.audioContext);
+
+    // Attempt to resume audio context with resilience
+    if (this.audioContext.state === 'suspended') {
+      const resumed = await this.resilience.resumeWithRetry(this.audioContext);
+      if (!resumed) {
+        console.warn(
+          '[AudioEngine] AudioContext could not be resumed, audio may not work until user interaction'
+        );
+      }
+    }
+
     // Create master gain node
     this.masterGainNode = this.audioContext.createGain();
     this.masterGainNode.connect(this.audioContext.destination);
     this.masterGainNode.gain.value = 0.8;
 
     console.log('[AudioEngine] Initialized with sample rate:', this.audioContext.sampleRate);
+    console.log('[AudioEngine] AudioContext state:', this.audioContext.state);
   }
 
   async shutdown(): Promise<void> {
@@ -101,13 +131,10 @@ export class WebAudioEngine implements IAudioEngine {
     }
 
     try {
-      // Fetch audio data
-      const response = await fetch(sound.url);
-      const arrayBuffer = await response.arrayBuffer();
+      // Use AudioAssetManager to load and cache the sound
+      const audioBuffer = await this.assetManager.getSound(sound);
 
-      // Decode audio data
-      const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
-
+      // Store in local cache for quick lookup
       this.sounds.set(sound.id, {
         sound,
         buffer: audioBuffer
@@ -132,6 +159,13 @@ export class WebAudioEngine implements IAudioEngine {
   triggerPad(padId: string, options: PlaybackOptions = {}): void {
     if (!this.audioContext || !this.masterGainNode) {
       throw new Error('AudioEngine not initialized');
+    }
+
+    // Attempt to resume audio context if suspended (e.g., before user interaction)
+    if (this.audioContext.state === 'suspended') {
+      this.resilience.resumeWithRetry(this.audioContext).catch((error) => {
+        console.error('[AudioEngine] Failed to resume audio context:', error);
+      });
     }
 
     const padConfig = this.pads.get(padId);
