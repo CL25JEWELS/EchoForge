@@ -39,7 +39,6 @@ export const Pad: React.FC<PadProps> = React.memo(
     const isEmpty = !config.soundId;
     const isLoading = loadState === AssetLoadState.LOADING;
     const isError = loadState === AssetLoadState.ERROR;
-    const isLoaded = loadState === AssetLoadState.LOADED;
 
     const padClasses = [
       'pad',
