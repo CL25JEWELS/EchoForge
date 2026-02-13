@@ -2,6 +2,20 @@
  * Core audio types for the looper app
  */
 
+export enum AssetLoadState {
+  NOT_LOADED = 'not_loaded',
+  LOADING = 'loading',
+  LOADED = 'loaded',
+  ERROR = 'error'
+}
+
+export interface AssetLoadError {
+  soundId: string;
+  error: Error;
+  timestamp: number;
+  retryCount: number;
+}
+
 export enum SoundCategory {
   KICK = 'kick',
   SNARE = 'snare',
