@@ -18,51 +18,58 @@ export interface PlaybackControlsProps {
   className?: string;
 }
 
-export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
-  isPlaying,
-  tempo,
-  masterVolume,
-  onPlay,
-  onStop,
-  onTempoChange,
-  onVolumeChange,
-  className = ''
-}) => {
-  return (
-    <div className={`playback-controls ${className}`}>
-      <div className="playback-controls__transport">
-        <button className="playback-controls__button" onClick={isPlaying ? onStop : onPlay}>
-          {isPlaying ? '⏸ Stop' : '▶ Play'}
-        </button>
-      </div>
+// ⚡ Bolt: Wrap in React.memo to prevent unnecessary re-renders.
+// Since StudioScreen updates state every 50ms, this component would otherwise
+// re-render 20 times per second even when its own props haven't changed.
+export const PlaybackControls: React.FC<PlaybackControlsProps> = React.memo(
+  ({
+    isPlaying,
+    tempo,
+    masterVolume,
+    onPlay,
+    onStop,
+    onTempoChange,
+    onVolumeChange,
+    className = ''
+  }) => {
+    return (
+      <div className={`playback-controls ${className}`}>
+        <div className="playback-controls__transport">
+          <button className="playback-controls__button" onClick={isPlaying ? onStop : onPlay}>
+            {isPlaying ? '⏸ Stop' : '▶ Play'}
+          </button>
+        </div>
 
-      <div className="playback-controls__tempo">
-        <label>
-          BPM:
-          <input
-            type="number"
-            value={tempo.bpm}
-            onChange={(e) => onTempoChange({ bpm: Number(e.target.value) })}
-            min={60}
-            max={200}
-          />
-        </label>
-      </div>
+        <div className="playback-controls__tempo">
+          <label>
+            BPM:
+            <input
+              type="number"
+              value={tempo.bpm}
+              onChange={(e) => onTempoChange({ bpm: Number(e.target.value) })}
+              min={60}
+              max={200}
+            />
+          </label>
+        </div>
 
-      <div className="playback-controls__volume">
-        <label>
-          Volume:
-          <input
-            type="range"
-            value={masterVolume}
-            onChange={(e) => onVolumeChange(Number(e.target.value))}
-            min={0}
-            max={1}
-            step={0.01}
-          />
-          <span>{Math.round(masterVolume * 100)}%</span>
-        </label>
+        <div className="playback-controls__volume">
+          <label>
+            Volume:
+            <input
+              type="range"
+              value={masterVolume}
+              onChange={(e) => onVolumeChange(Number(e.target.value))}
+              min={0}
+              max={1}
+              step={0.01}
+            />
+            <span>{Math.round(masterVolume * 100)}%</span>
+          </label>
+        </div>
       </div>
-    </div>
-  );
-};
+    );
+  }
+);
+
+PlaybackControls.displayName = 'PlaybackControls';
