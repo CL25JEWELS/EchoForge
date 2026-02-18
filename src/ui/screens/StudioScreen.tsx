@@ -142,22 +142,25 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
     setSelectedCategory(category);
   }, []);
 
-  const handleSoundSelect = (sound: Sound) => {
-    // Assign sound to the first empty pad or show pad selection UI
-    const emptyPad = pads.find((p) => !p.soundId);
-    if (emptyPad) {
-      handlePadConfigChange(emptyPad.id, { soundId: sound.id });
-      // Preload the sound into the audio engine
-      const soundPackManager = app.getSoundPackManager();
-      const fullSound = soundPackManager.getSound(sound.id);
-      if (fullSound) {
-        audioEngine.loadSound(fullSound).catch((err) => {
-          console.error('Failed to load sound:', err);
-        });
+  const handleSoundSelect = useCallback(
+    (sound: Sound) => {
+      // Assign sound to the first empty pad or show pad selection UI
+      const emptyPad = pads.find((p) => !p.soundId);
+      if (emptyPad) {
+        handlePadConfigChange(emptyPad.id, { soundId: sound.id });
+        // Preload the sound into the audio engine
+        const soundPackManager = app.getSoundPackManager();
+        const fullSound = soundPackManager.getSound(sound.id);
+        if (fullSound) {
+          audioEngine.loadSound(fullSound).catch((err) => {
+            console.error('Failed to load sound:', err);
+          });
+        }
       }
-    }
-    setShowSoundBrowser(false);
-  };
+      setShowSoundBrowser(false);
+    },
+    [pads, handlePadConfigChange, app, audioEngine]
+  );
 
   const soundPacks = soundPackManager.getAllSoundPacks();
 
