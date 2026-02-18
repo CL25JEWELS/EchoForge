@@ -116,27 +116,33 @@ export const StudioScreen: React.FC<StudioScreenProps> = ({ app, className = '' 
     [projectManager]
   );
 
-  const handlePlay = () => {
+  const handlePlay = useCallback(() => {
     audioEngine.startClock();
     setIsPlaying(true);
-  };
+  }, [audioEngine]);
 
-  const handleStop = () => {
+  const handleStop = useCallback(() => {
     audioEngine.stopClock();
     audioEngine.reset();
     setIsPlaying(false);
-  };
+  }, [audioEngine]);
 
-  const handleTempoChange = (newTempo: Partial<TempoConfig>) => {
-    const updatedTempo = { ...tempo, ...newTempo };
-    setTempo(updatedTempo);
-    projectManager.updateTempo(updatedTempo);
-  };
+  const handleTempoChange = useCallback(
+    (newTempo: Partial<TempoConfig>) => {
+      const updatedTempo = { ...tempo, ...newTempo };
+      setTempo(updatedTempo);
+      projectManager.updateTempo(updatedTempo);
+    },
+    [projectManager, tempo]
+  );
 
-  const handleVolumeChange = (volume: number) => {
-    setMasterVolume(volume);
-    audioEngine.setMasterVolume(volume);
-  };
+  const handleVolumeChange = useCallback(
+    (volume: number) => {
+      setMasterVolume(volume);
+      audioEngine.setMasterVolume(volume);
+    },
+    [audioEngine]
+  );
 
   const handleCategoryChange = useCallback((category: SoundCategory | undefined) => {
     setSelectedCategory(category);
