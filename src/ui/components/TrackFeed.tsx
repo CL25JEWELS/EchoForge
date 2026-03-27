@@ -15,6 +15,7 @@ export interface TrackFeedProps {
   onTrackRemix?: (trackId: string) => void;
   onUserClick?: (userId: string) => void;
   onLoadMore?: () => void;
+  loadingMore?: boolean;
   className?: string;
 }
 
@@ -25,6 +26,7 @@ export const TrackFeed: React.FC<TrackFeedProps> = ({
   onTrackRemix,
   onUserClick,
   onLoadMore,
+  loadingMore = false,
   className = ''
 }) => {
   const getFeedTitle = (type: FeedType): string => {
@@ -66,8 +68,8 @@ export const TrackFeed: React.FC<TrackFeedProps> = ({
       </div>
 
       {feed.pagination?.hasMore && onLoadMore && (
-        <button className="track-feed__load-more" onClick={onLoadMore}>
-          Load More
+        <button className="track-feed__load-more" onClick={onLoadMore} disabled={loadingMore}>
+          {loadingMore ? 'Loading...' : 'Load More'}
         </button>
       )}
     </div>
