@@ -18,7 +18,11 @@ export interface PlaybackControlsProps {
   className?: string;
 }
 
-export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
+// ⚡ Bolt: Using React.memo to prevent unnecessary re-renders.
+// The parent component (StudioScreen) updates its state frequently,
+// which would cause this component to re-render even if its props haven't changed.
+// This optimization ensures the controls only re-render when their specific props change.
+export const PlaybackControls: React.FC<PlaybackControlsProps> = React.memo(({
   isPlaying,
   tempo,
   masterVolume,
@@ -65,4 +69,6 @@ export const PlaybackControls: React.FC<PlaybackControlsProps> = ({
       </div>
     </div>
   );
-};
+});
+
+PlaybackControls.displayName = 'PlaybackControls';
